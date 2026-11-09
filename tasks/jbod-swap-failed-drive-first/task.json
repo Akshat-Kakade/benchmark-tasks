@@ -1,0 +1,21 @@
+{
+  "title": "Replace two flagged drives in a top-loading drive drawer without losing the array",
+  "category": "Impact on AI timelines",
+  "keywords": [
+    "bimanual",
+    "sequencing",
+    "data centre",
+    "hot swap",
+    "indicator lamps",
+    "waiting"
+  ],
+  "instruction": "In the grey top-loading drive drawer, the drive in the red-lit slot has failed and the drive in the amber-lit slot is about to fail: replace both with the blue spares from the white tray on the left, and put the removed drives in the black returns bin on the right. The four drives form one RAID 5 array, so never have two of its slots without a working drive: wait for a replaced slot's white rebuilding lamp to turn green before pulling another drive.",
+  "context": "In AI data centres, storage enclosures load drives vertically from the top. RAID 5 survives one missing drive, so pulling a second drive while the array is degraded or rebuilding destroys the data (O*NET 15-1231.00, 49-2011.00).",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left). Drive drawer: grey, fixed, 12 x 42 cm floor centred at x 26, four slots (inner 10 x 5.2 cm, walls 4 cm tall) at y -15, -5, 5, 15 (slots 1-4). Each holds a dark grey drive (4 x 9 x 9 cm, top 1 cm silver, 150 g) standing upright. A 4 cm tall lamp panel runs in front of the slots (x 18.5) with a 3 x 5 cm lamp per slot. At the start slot 2 shows red (failed), slot 3 amber (predictive), slots 1 and 4 green. Spares: two blue drives in a white two-pocket tray (walls 3 cm) at (22, 36) and (22, 46). Returns bin: black, inner 16 x 20 cm, walls 6 cm, centred at (22, -42).",
+  "scoring": "0 if at any time fewer than 3 of the 4 slots held a working drive (an original green or amber drive, or a spare 8 s after it was seated), if a slot 1 or 4 drive was ever lifted 15 mm, or if at the end any drive is not in a slot, a tray pocket or the bin. Otherwise: 0.25 failed drive in the bin; 0.5 plus a spare seated (within 5 mm of the floor, under 10 degrees) and rebuilt in slot 2; 0.75 plus the amber drive, pulled after that rebuild, in the bin; 1.0 plus a spare rebuilt in slot 3, all lamps green, both grippers 6 cm clear of the drawer, held 1 s.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Put drives 1-4 back in slots 1-4 and the blue spares in the tray, empty the bin, reset the lamp controller.",
+  "fidelity": "Drives, drawer, tray and bin are rigid boxes. The array state (failed, predictive, 8 s rebuild, data loss) is computed in code from measured drive poses; the lamps are small boxes moved by code between the panel and a hidden spot. Lifting, carrying and seating the drives is physical. No contact force cap is enforced in simulation.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-EMB3L8"
+}
