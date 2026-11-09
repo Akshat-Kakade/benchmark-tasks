@@ -1,0 +1,21 @@
+{
+  "title": "Lever up a heavy block and chock it before releasing the bar",
+  "category": "Safety and alignment",
+  "keywords": [
+    "lever",
+    "pry bar",
+    "fulcrum",
+    "chock",
+    "crush hazard",
+    "bimanual"
+  ],
+  "instruction": "Press down the long end of the grey lever bar to lift the red block, slide the orange chock under the red block, then let the lever go so the block rests on the chock.",
+  "context": "Millwrights and mechanics raise machinery with a pry bar and must block it before reaching under; a load left on the bar alone is a crush hazard (O*NET 49-9044.00, 49-3023.00). The bar must be held down by one hand while the other places the chock, then released.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left). A grey pry bar (25 cm long, 3 cm wide, 1.2 cm thick) lies along y at x 28 on a fixed black fulcrum 2.2 cm high at y -3.5, with two small black guide posts either side of it; its long end points at the right arm, its short end rests on the table, and a 3 cm-high level platform near the short end carries a red block (8 x 11 x 5 cm, 2 kg, centre at y 4.5), whose underside is 3.3 cm above the table. An orange U-shaped chock (two 3.7 cm-high prongs 8 cm long, 7.6 cm apart outside to outside, joined by a bridge with a 7 cm handle stem, 0.15 kg) lies on the table at y 23.5 on the left, prongs pointing at the block.",
+  "scoring": "Measured at the end with a ruler and a set square. 1.0 if the bar is released (within 2.5 degrees of its rest slope), the red block rests on the chock 2 to 7 mm above where it started, tilt at most 5 degrees, the chock's prongs fully under it, still for 1 s, and nothing gated. 0.75 if the chock is fully under the raised block but the bar is still pressed or the block is not yet resting; 0.5 if the block was raised 9 mm with the bar and the chock has slid 8 cm; 0.25 if the block was raised 6 mm with the bar; 0 otherwise. Zero if the block tilts beyond 30 degrees or is carried 20 cm, the chock is carried 30 cm, or the block is lifted 6 mm without using the bar.",
+  "run_limit": "2,000 steps (100 s at 20 Hz)",
+  "reset_notes": "Rest the block on the bar's platform, the chock on the left of the table.",
+  "fidelity": "Rigid bodies built from boxes; fulcrum and guide posts are fixed, the bar is a free body held on the fulcrum by gravity and the guide posts only (no hinge joint), so it can slide or twist if pushed sideways. The block is lighter than a real machine part (2 kg) so a gripper can press the bar, and the bar is short for the same reason. Bar friction 0.6, block friction 0.8.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-PHK9BD"
+}
