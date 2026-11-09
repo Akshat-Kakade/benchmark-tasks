@@ -1,0 +1,20 @@
+{
+  "title": "Pull a slip-sheet from under a load while bracing it",
+  "category": "Safety and alignment",
+  "keywords": [
+    "bimanual",
+    "slip-sheet",
+    "friction",
+    "bracing",
+    "load handling"
+  ],
+  "instruction": "Pull the white sheet out from under the orange block by its green tab with the left hand, while the right hand keeps the orange block from moving.",
+  "context": "Warehouse loads and transit-packed modules sit on thin slip-sheets or liners that must come out without shifting the load (O*NET 53-7051, 53-7062, 49-2011). A load dragged along with the sheet tips or lands off its pad.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left). Sheet: white laminate slab 26 x 26 cm, 4 mm thick, 150 g, friction 0.3, centre at x 30, y 4, with a green tab 4 cm (x) by 6 cm (y) by 4 cm tall standing on its +y edge (tab centre y 19). Block: orange 8 cm cube, 350 g, friction 0.3, centre x 30, y 0, standing on the middle of the sheet.",
+  "scoring": "Measured at the end with a ruler and set square, held 1 s. 0 if, at any time after the first 2 s, the block was lifted more than 1 cm, tilted more than 20 degrees or moved more than 8 cm. 0.25 if the sheet was pulled 6 cm toward +y; 0.5 if pulled 10 cm, or if it is fully out but the block moved 2.5-8 cm; 0.75 if the sheet is fully out (its edge 5 mm clear of the block's footprint) and the block moved 1.2-2.5 cm or is tilted 5-20 degrees; 1.0 if the sheet is fully out, the block moved at most 1.2 cm, is tilted at most 5 degrees, rests on the table, and block and sheet stay still for 1 s.",
+  "run_limit": "2,000 steps (100 seconds at 20 Hz)",
+  "reset_notes": "Lay the sheet back under the block at the marked spot, tab toward +y.",
+  "fidelity": "Rigid boxes; the sheet is a rigid 4 mm slab with a tab (no bending), friction 0.3 on all contacts. Scoring is computed from measured poses; nothing is code-driven. The 40 mm tab is much stiffer than a real sheet's pull strip.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-7DZCGV"
+}
