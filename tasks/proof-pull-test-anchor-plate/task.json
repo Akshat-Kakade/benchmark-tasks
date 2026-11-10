@@ -1,0 +1,20 @@
+{
+  "title": "Proof-pull an anchor plate to its test load while holding the plate",
+  "category": "Safety and alignment",
+  "keywords": [
+    "bimanual",
+    "proof test",
+    "spring gauge",
+    "bracing",
+    "fall protection"
+  ],
+  "instruction": "Proof-test the grey anchor plate: pull its yellow handle until the gauge carriage reaches the green band, hold it for one second, then let it ease back, without the plate sliding.",
+  "context": "Temporary roof anchors are proof-loaded before a worker clips on: the tester pulls to a target load while pinning the base (O*NET 47-2181, 47-2211, 47-4099). An untested anchor can fail under a fall.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left). Grey plate 12 (x) x 30 (y) x 1.5 cm, 0.8 kg, friction 0.1, centre x 30, y -2, with an orange fin (7 x 2 x 4 cm) at its far left end (y 10). A yellow carriage (5 cm long) on a rail along y, with a yellow handle 4 x 2 x 4 cm tall at x 30, y -13, is pulled back by a spring of 80 N/m (about 4.4-5.6 N at the band); stroke 9 cm, pulled toward the left. A scale beside the rail has a green band at 5.5-7.0 cm of travel and a red zone at 8-9 cm.",
+  "scoring": "Read at the end from the carriage travel and the plate position. 0 if the carriage ever passes 8 cm, or the plate moves more than 1.5 cm, lifts more than 1 cm or tilts more than 20 degrees (after the first 2 s). 0.25 if the carriage was pulled 2 cm; 0.5 if it reached the band (5.5 cm); 0.75 if it stayed inside 5.5-7.0 cm for 1 s with the plate moved at most 5 mm; 1.0 if also it returned to 1 cm or less within 3 s of leaving the band, the plate moved at most 5 mm, and the carriage is still.",
+  "run_limit": "1,500 steps (75 seconds at 20 Hz)",
+  "reset_notes": "Let the carriage return to rest and put the plate back on its marks.",
+  "fidelity": "Rigid boxes; the gauge reading is the travel of a spring-loaded slider (80 N/m, a modelled spring), not a physical force sensor. The plate is a rigid slab with friction 0.1. Scoring is computed from measured poses and the slider position; nothing is code-driven.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-2YKHW3"
+}
