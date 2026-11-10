@@ -1,0 +1,20 @@
+{
+  "title": "Clock an open shell 90 degrees around a held shaft in the air",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "free bodies",
+    "relative orientation",
+    "concentric rotation",
+    "service shell"
+  ],
+  "instruction": "Hold the blue shaft by its upper handle and turn the orange open shell around it, with the other hand, until the shell's white wall is parallel to the green bar; keep the shaft's black stripe facing forward.",
+  "context": "A split service shell around a shaft sometimes has to be set at a particular angle to the shaft before the next job, while the shaft must stay at its registered position and heading (O*NET 49-9041.00, industrial machinery mechanics). Turning both together gives the right-looking angle in the room but the wrong angle relative to the shaft. The shell has 20 mm of clearance all round; nothing is threaded or press-fitted.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left, table top 74.75 cm). Blue shaft: 4.5 cm diameter x 7 cm cylinder at x 34, y 0 (120 g, friction 0.6) with a 2.2 x 2.2 x 6.5 cm handle stem on top and a black stripe on its +x side. Orange open shell: three joined boxes forming a U in plan, outer 14 x 14 x 3.5 cm, 8.5 cm square opening, open towards +x, the +y wall white, 100 g, friction 0.6, centred on the shaft, with a handle stem (3.5 x 4 x 8.5 cm) on a tab at its -y edge, handle centre 16 cm from the shaft axis. Green bar on the table: 1 x 14 x 0.3 cm at x 42.5, y 0.",
+  "scoring": "Measured at the end, held 1 s. 0 if either body is less than 1.5 cm above its rest height, the shell touches the shaft, the shaft moves more than 3 cm from its start, or either body tilts more than 12 degrees. Otherwise 0.25 if the shell has turned at least 20 degrees clockwise (seen from above) relative to the shaft; 0.5 if at least 55 degrees and the shaft yaw changed at most 20 degrees; 0.75 if 70-110 degrees, shaft within 2.5 cm and 12 degrees of its start; 1.0 if 78-102 degrees, shaft within 1.5 cm and 8 degrees of its start, the shell opening centre within 1.5 cm of the shaft axis, gap to the shaft at least 8 mm, tilt at most 8 degrees.",
+  "run_limit": "600 steps (30 seconds at 20 Hz)",
+  "reset_notes": "Stand the shaft at x 34, y 0 with its black stripe facing forward; set the shell round it, open side forward, white wall on the left, handle on the right.",
+  "fidelity": "Rigid boxes and a cylinder. Both bodies are free (no joints, pins or springs) and start resting on the table; the hands lift them 3 cm. Scoring uses only the two body poses.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-K8BKP6"
+}
