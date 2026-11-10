@@ -1,0 +1,20 @@
+{
+  "title": "Open both die faces clear of the casting",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "die opening",
+    "spring return",
+    "symmetry",
+    "casting"
+  ],
+  "instruction": "Pull the blue left die face left and the orange right die face right until both clear the grey casting by the marked distance; keep the casting in place.",
+  "context": "A moulding operator separates both die faces before removing a finished part (O*NET 51-4072.00). Uneven opening can scrape or trap the part. The scene models the separation and the clearance check, not heat or adhesion.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left). Two grey bases 23 (x) x 15.5 (y) x 1.5 cm, 3 kg, at x 29, y +-7.75. A dark grey casting (cylinder 6 cm diameter, 6 cm tall, 0.12 kg) at x 29, y 0 rests on them. A blue die face (14 x 4.5 x 5.5 cm) on the left and an orange one on the right sit 1-1.5 cm from the casting, each on a slider returned inward by a spring (60 N/m, stroke 7.5 cm); a bar carries each to a 4 x 2 x 6 cm grip post at y +-20.5. Green marks on the bases show the 6.5 cm clearance.",
+  "scoring": "Read from the two slider travels and the casting pose. 0 if after the first 2 s the casting moves more than 1.2 cm or tilts more than 8 degrees, a base moves more than 1.5 cm, or a face touches the casting. Otherwise: 0.25 both faces out at least 2 cm; 0.5 both at least 4 cm with travel difference at most 3 cm; 0.75 both at least 5.5 cm, difference at most 2 cm; 1.0 both at least 6.5 cm, difference at most 1.2 cm, each inner face at least 3.5 cm clear of the casting, held 1 s (the run ends with success).",
+  "run_limit": "1,600 steps (80 seconds at 20 Hz)",
+  "reset_notes": "Let both faces return to rest and stand the casting back on its mark.",
+  "fidelity": "Rigid boxes and one cylinder; each face is a spring-loaded slider (60 N/m, a modelled spring), not a force sensor and not a contact-accurate die. The casting is free-standing and light. Nothing is code-driven; scoring uses measured poses and slider positions.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-FH276C"
+}
