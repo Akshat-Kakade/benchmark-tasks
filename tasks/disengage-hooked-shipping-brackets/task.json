@@ -1,0 +1,20 @@
+{
+  "title": "Turn a T-head bracket out of a keyed housing and hold the two parts apart",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "unlatching",
+    "keyed coupling",
+    "rigid parts",
+    "turn then withdraw"
+  ],
+  "instruction": "Hold the blue housing by its back handle and the orange bracket by its stem handle, turn the orange bracket until its T-head clears the slot and pull it out, then hold both brackets apart above their marked outlines.",
+  "context": "Reusable shipping hardware can lock together: a T-head bracket sits inside a keyed housing and cannot be pulled straight out through the narrow slot, and forcing it bends the parts. A technician unpacking equipment holds the housing steady, turns the bracket until its head is edge-on to the slot, and withdraws it (O*NET 49-9041.00, installing and servicing industrial machinery). The task ends with both parts held apart.",
+  "setup": "Positions in cm from the midpoint between the arm bases (x forward, y left, table top 74.75 cm). Blue housing: 30 (x) x 18 (y) x 4.4 cm closed box (floor, lid, side walls, back wall) with an 11 cm wide slot between two front lips on its -y face, 120 g, friction 0.6, centre (24, +10), with a 4 x 4 x 9 cm handle post on its back (+y) face. Orange bracket: a 13 x 1.8 x 1.2 cm T-head inside the housing (head centre at the housing centre), a 1.2 cm wide stem 15 cm long out through the slot, and a 4 x 4 x 9 cm handle post at the stem end; 120 g, friction 0.6. Two white outlines on the table: 32 x 20 cm under the housing and 17 x 17 cm centred (24, -18).",
+  "scoring": "Measured every step, final state held 1 s. 0 if either bracket is lifted less than 2 cm, either tilts more than 20 degrees, or either leaves the table area. 0.25 if the orange bracket has turned at least 15 degrees relative to the housing at some point while held. 0.5 if it has turned at least 30 degrees and its head centre is at least 12 cm from the housing centre. 0.75 if the T-head is fully out of the slot (all head corners beyond the housing front face), 17 cm or more from the housing centre, tilts at most 12 degrees. 1.0 if 20 cm or more apart, tilts at most 8 degrees, housing yaw at most 8 degrees, each bracket within 3 cm of its own outline centre.",
+  "run_limit": "1,500 steps (75 seconds at 20 Hz)",
+  "reset_notes": "Set the housing on its outline with the slot toward the right arm, the orange T-head inside it with the stem through the slot and the handle post standing on the table.",
+  "fidelity": "Both brackets are free rigid box assemblies (120 g each); nothing is pinned, hinged or code-driven. The score uses only the two measured poses plus the peak relative turn recorded during the run.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-28TZK5"
+}
