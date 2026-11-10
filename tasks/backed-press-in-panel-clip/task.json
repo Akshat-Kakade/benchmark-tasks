@@ -1,0 +1,20 @@
+{
+  "title": "Back up a springy trim panel while pressing a clip home",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "backing support",
+    "push-pin clip",
+    "spring panel",
+    "counter-force"
+  ],
+  "instruction": "Press the red clip into the grey panel's hole until it is fully seated, without letting the panel sag. Support the panel from underneath with the blue paddle while you press.",
+  "context": "Door-card and bumper trim clips are pressed in over a backed panel; pressing an unsupported panel cracks it or leaves the clip half-seated (O*NET 49-3023 Automotive Service Technicians; 51-2098 Assemblers).",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left). A dark base with two rails along y (x 21.5 and 38.5) carries a grey 20 x 20 cm, 8 mm panel (100 g) on four soft spring seats (0.5 N/mm in total), panel centre x 30, y 0, top about 6 cm above the table. A red clip (30 mm stem, 44 mm cap, detent 0.6 N/mm, 10 mm travel) stands in a 34 mm hole at x 30, y -2. A blue paddle (200 g; a fork with a 30 cm stem and an upright grip post) lies on the table at the left with its fork at x 30, y 18.",
+  "scoring": "Measured at the end. 0.25 if the clip was pressed 3 mm; 0.5 if the paddle touched the panel's underside within 4 cm of the clip axis while the panel sagged at most 8 mm; 0.75 if the clip was pressed 9 mm for 0.5 s while the panel sagged at most 3 mm; 1.0 if additionally the paddle is withdrawn clear of the panel (2 cm) and the panel is back at its rest height within 4 mm and still for 1 s. 0 if after the first 2 s the panel bottomed (sagged more than 18 mm) with the clip pressed, the panel or base moved more than 4 cm or tilted more than 20 degrees, or the paddle was lifted more than 20 cm.",
+  "run_limit": "1,800 steps (90 seconds at 20 Hz)",
+  "reset_notes": "Set the paddle back on the table at the left, let the clip spring up, check the panel rests on all four seats.",
+  "fidelity": "Rigid boxes with spring-driven sliders; the panel is rigid on soft seats (no bending), the clip has no latch and springs back when released, so seating is judged from the recorded travel held 0.5 s under support. The press force is about 6 N. Scoring comes from measured poses and joints; nothing is code-driven.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-DT75PT"
+}
