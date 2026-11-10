@@ -1,0 +1,20 @@
+{
+  "title": "Push three loose cartridges flush with one two-handled pusher bar",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "pushing",
+    "batch loading",
+    "tool",
+    "alignment"
+  ],
+  "instruction": "Grip the blue pusher by both orange handles and push the three yellow cartridges along their lanes until their front edges form one line at the green stops.",
+  "context": "A batch fixture can receive several cartridges at once; one short-fed cartridge can miss engagement in the next operation (O*NET 51-9198.00, helpers of production workers: supplying materials). A wide pusher bar with handles only at its two ends spreads one stroke over all three lanes. The task ends when the cartridges are flush; no fixture mechanism is simulated.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left, table top 74.75 cm). Three white lane strips 20 x 8.5 x 0.2 cm at x 27, y -10.5 / 0 / +10.5. Green stops 2 x 8.5 x 2 cm with their front faces at x 36 in each lane. Three yellow cartridges 5.5 x 5.5 x 3.5 cm, 90 g, friction 0.45 / 0.60 / 0.45, centres x 22 in the lane centres. Blue pusher bar 2.5 x 35 x 2.5 cm, 220 g, friction 0.2, face centre x 17.8, y 0, flat against the cartridge backs, with a 2 x 2 cm stem and a 4 x 3.5 x 2.5 cm orange handle block at y +17 and y -17 (handle centres 10 cm above the table).",
+  "scoring": "Measured at the end, perfect state held 1 s. 0 if any cartridge tilts more than 8 degrees, is more than 15 mm off its lane centre, or its front edge passes the stop face (x 36.1 cm). 0.25 if at least one cartridge advanced 40 mm. 0.5 if all three advanced 60 mm. 0.75 if all three centres are at x 30 cm or more and the centre-x spread is at most 25 mm. 1.0 if every centre x is 31.2-33.2 cm, spread at most 12 mm, each lane y error at most 12 mm, each yaw at most 8 degrees, and the pusher is still square behind them (yaw at most 6 degrees, pitch at most 8 degrees).",
+  "run_limit": "700 steps (35 seconds at 20 Hz)",
+  "reset_notes": "Place the bar flat against the three cartridge backs and the cartridges in the lane centres.",
+  "fidelity": "Rigid boxes only; free bodies, no joints, springs or sensors; nothing code-driven. The pusher is a rigid bar and the task is pushing, not insertion. Lane edges are painted, not physical; the stops are physical. Scoring uses cartridge and pusher poses only.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-M49RDH"
+}
