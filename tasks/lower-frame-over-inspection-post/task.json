@@ -1,0 +1,20 @@
+{
+  "title": "Lower a closed rectangular frame over an upright post and seat it level",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "clearance",
+    "frame",
+    "seating",
+    "obstacle threading"
+  ],
+  "instruction": "Hold the blue rectangular frame by its two orange handles, move its opening over the grey post, and lower it level onto the green outline without touching the post.",
+  "context": "A rigid inspection or protective frame is fitted around equipment that cannot be moved (O*NET 49-9041.00, installation and maintenance of machinery). A bar that touches the post can damage it or stop the frame seating. The task ends with the frame seated, before any fastening.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left, table top 74.75 cm). Grey post: cylinder 6 cm diameter, 7 cm high, fixed at x 34, y 0. Green seating outline 27 x 35 x 0.8 cm, fixed, centre x 34, y 0. Blue frame: four joined bars, outer 26 (x) x 34 (y) x 1.6 cm, opening 16 x 22 cm, 160 g, friction 0.6, with a 4 x 3.5 x 8.6 cm orange handle stem at each long end (y +-18.5). It rests on two grey 3 x 3 x 8.5 cm pedestals under the stems, frame centre x 18, y 0.",
+  "scoring": "Measured at the end, held 1 s. 0 if the frame tilts more than 12 degrees, a bar reaches the post, the frame ends below the post top but 6 cm or more off the post, or the post is not inside the frame opening. 0.25 if the post axis is inside the opening. 0.5 if the frame centre is within 40 mm of the post axis and its underside is below the post top (under 81.0 cm height). 0.75 if the centre is within 25 mm, the underside within 20 mm of the outline and tilt at most 12 degrees. 1.0 if the centre is within 15 mm, the underside within 12 mm of the outline (seated), tilt at most 8 degrees and the post at least 8 mm from every inner bar side.",
+  "run_limit": "1,800 steps (90 seconds at 20 Hz)",
+  "reset_notes": "Set the frame on the two pedestals with a handle stem on each pedestal; the post and outline are fixed.",
+  "fidelity": "Rigid boxes (frame is four joined bars with two handle stems, 0.16 kg, one free body with no joints or springs); the post, outline and pedestals are fixed. Nothing is code-driven. Scoring uses only the frame pose and the fixed post position.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-5QUQF6"
+}
