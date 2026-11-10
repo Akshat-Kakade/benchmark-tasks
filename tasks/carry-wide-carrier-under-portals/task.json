@@ -1,0 +1,21 @@
+{
+  "title": "Carry a wide carrier by both ends through two offset slots in low overhead guards and set it down level",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "two-arm carry",
+    "overhead guard",
+    "slot",
+    "level carry",
+    "clearance"
+  ],
+  "instruction": "Carry the blue carrier by its two orange handles through the slots in both grey guards, steering the blue block through each slot, and set it down level inside the second green outline.",
+  "context": "A production carrier can pass under low machine guards on its way to a receiving station; a tilted or sagging carrier strikes the guard, and a carrier that is not steered sideways between offset openings jams in the second one (workplace-safety hazard; O*NET 51-2092.00 assemblers). The carrier is wider than the guards, so two hands hold it at the two ends.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left). Carrier: blue plate 8 x 50 x 1.2 cm, 0.2 kg, friction 0.8, with a blue block 4 x 5 x 6 cm on its middle and an orange handle stem 5 x 4 x 5 cm at each long end (y +-23); it rests in a green outline centred x 21, y 0. Two grey fixed guards: plates 1.2 cm thick, 15 cm wide (|y| < 7.5), from 3.75 cm above the table to 25 cm above it, at x 30 and x 38, with an 8 cm slot centred y +2 (first guard) and y -2 (second guard); a fixed beam and rear post join them. A second green outline, centred x 45, y 0, is the goal.",
+  "scoring": "Carrier pose measured at the end; 1.0 held 1 s. 0 if the carrier tilts more than 20 degrees at any time or falls off the table. 0.25 if the carrier, lifted at least 10 mm, has its centre past x = 33.5 cm (through the first slot). 0.5 if it then also passes x = 42 cm lifted at least 10 mm (through the second slot). 0.75 if it is within 3 cm of the goal centre with tilt and yaw at most 12 degrees. 1.0 if within 12 mm of the goal centre, within 6 mm of table height, tilt and yaw at most 8 degrees.",
+  "run_limit": "1,500 steps (75 seconds at 20 Hz)",
+  "reset_notes": "Set the carrier in the first green outline, plate along y, centred on x 21; the block stands on the plate middle.",
+  "fidelity": "Rigid boxes only; the guards are fixed rigid plates and the block is rigidly part of the carrier. Scoring is computed from the measured carrier pose; nothing is code-driven. The carrier is 0.2 kg, lighter than a real loaded carrier, so the simulated pinch can hold it. A single hand can nearly manage it; the 10 mm lift rule is what stops a drag.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-YDNLB3"
+}
