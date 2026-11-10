@@ -1,0 +1,20 @@
+{
+  "title": "Meet two free plates edge to edge in the air, level, with a 15 mm seam",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "fit check",
+    "edge alignment",
+    "assembly",
+    "seam gap"
+  ],
+  "instruction": "Hold the blue and orange plates above the marked bench area and bring their straight inner edges together, level and without overlap.",
+  "context": "Before two prefabricated cover sections are fastened, an assembler holds them edge to edge and checks the fit: a step at the seam or a wide or overlapping gap reveals a bad pair (O*NET 51-2092.00, multiple-machine tool setup / assembly quality checks). The task ends at the held fit check, before any adhesive or fastener.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left, table top 74.75 cm). Marked bench outline: white, 19 x 29 x 0.2 cm, centre x 31, y 0. Two grey pedestals 10 x 6 x 2 cm at x 31, y +12.5 and y -12.5. Blue plate 14 (x) x 10.5 (y) x 1.2 cm, 120 g, friction 0.6, with a 6 x 4 x 5 cm handle block joined to its outer edge (handle centre 7.25 cm from the plate centre), resting on the left pedestal (plate centre y +12.5). Orange plate: the same, mirrored, on the right pedestal.",
+  "scoring": "Measured at the end, held 1 s. 0 if either plate is not held in the air (underside under 3 cm above the pedestal tops), either plate tilts more than 12 degrees, the plates overlap by more than 8 mm, or their heights differ by more than 4 cm. 0.25 if both plates are held. 0.5 if the seam gap (inner-edge distance) is at most 65 mm and the relative yaw at most 20 degrees. 0.75 if the gap is 0-35 mm, the height step at most 20 mm, the relative yaw at most 12 degrees and the edge midpoints within 40 mm along the seam. 1.0 if the gap is 8-25 mm, the height step at most 12 mm, the relative yaw at most 8 degrees, tilt at most 8 degrees, the seam midpoint within 12 mm of y = 0 and the edge midpoints within 20 mm along the seam.",
+  "run_limit": "800 steps (40 seconds at 20 Hz)",
+  "reset_notes": "Set each plate on its pedestal with its handle block on the outer (away from the bench centre) side.",
+  "fidelity": "Rigid boxes (plates 12 mm thick, 120 g, handle blocks added to give the pinch grip a stem; the original 18 mm plate with a thin tab was changed). Both plates are free bodies with no joints, pins or springs; nothing is code-driven. Scoring uses only the two plate poses.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-EFEQPV"
+}
