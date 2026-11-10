@@ -1,0 +1,20 @@
+{
+  "title": "Hand a rack of open sample cups across mid-air, level, to the far bench",
+  "category": "Societal relevance",
+  "keywords": [
+    "bimanual",
+    "handover",
+    "level carry",
+    "laboratory",
+    "specimen rack"
+  ],
+  "instruction": "Carry the white rack of three blue cups from the grey pad on the left to the grey pad on the right, handing it from one arm to the other in the air, and keep it level so no cup tips over.",
+  "context": "Laboratory and hospital technicians move racks of open sample cups between benches; a tilted rack spills patient samples (contamination hazard) (O*NET 29-2012, 31-9097). The benches here are 0.80 m apart, farther than either arm reaches, so the rack must change hands.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left). Left pad: grey 13 x 34 cm, 3 mm thick, centre x 30, y +40. Right pad: same, centre x 30, y -40. Rack: white plate 9 x 23 cm, 12 mm thick, 150 g, friction 0.6, with an upright handle block 6 x 4 x 4 cm at each short end (handle centres y +-13.5 from the plate centre) and three 6 mm high shallow wells. It starts centred on the left pad. Three blue cups (4.5 cm diameter, 6 cm tall, 30 g each, friction 0.8) stand in the wells at y -5.5, 0, +5.5 from the plate centre.",
+  "scoring": "Measured at the end, held 1 s. 0 if a cup is off the plate or tipped more than 20 degrees, the rack tilts more than 20 degrees while carried, or the rack is left on the table away from both pads. 0.25 if the rack was lifted at least 4 cm with the cups upright and carried past y = +15 cm. 0.5 if it was carried past y = -30 cm (only possible after a hand-over) with its tilt never above 8 degrees. 0.75 if it then rests on the right pad within 15 mm of the pad centre and 8 degrees of yaw. 1.0 if additionally all three cups are upright on the plate within 15 mm of their wells.",
+  "run_limit": "1,800 steps (90 seconds at 20 Hz)",
+  "reset_notes": "Stand the cups in the wells on the plate, set the rack centred on the left pad with its long side along y.",
+  "fidelity": "Rigid boxes and cylinders; cups are solid, not open, so nothing spills (upright and in-well stand in for no spill). The rack is 150 g, lighter than a loaded real rack, because the simulated pinch grip slips under a larger torque about its closing axis. Scoring is computed from measured poses; nothing is code-driven.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-H4HJV4"
+}
