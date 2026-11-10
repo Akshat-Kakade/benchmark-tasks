@@ -1,0 +1,20 @@
+{
+  "title": "Move an extraction hood's mounting foot while its mouth stays over the work mark",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "telescoping",
+    "hold datum",
+    "maintenance",
+    "extraction hood"
+  ],
+  "instruction": "Hold the blue hood mouth over the white work mark with your right hand. Move the orange mounting foot toward you to the green line with your left hand, letting the arm extend so the mouth stays put.",
+  "context": "A rigid telescoping extraction hood may need its mounting foot shifted to clear a service area while its mouth stays over the work point; moving the whole assembly would uncover that point (O*NET 49-9041.00, industrial equipment maintenance). The scene measures mouth and foot positions only; no airflow is simulated.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left). Orange foot 12 x 9 x 3.5 cm, 0.18 kg, friction 0.1, centre x 27, y 0, with a side tab and a 4 x 2 x 8 cm grip post at y +11. A blue arm bar (15 x 5.5 x 3 cm, 0.12 kg) rides on the foot on a slider along x (40 N/m modelled spring pulling it back, stroke 8 cm) and ends in a 6 x 7.5 cm hood mouth centred at x 40, y 0, 4.7 mm above the table, with a grip post at y -11. A white 6.5 cm disc work mark lies under the mouth start position and a green line (12 cm wide) lies at x 13.5.",
+  "scoring": "Read at the end. D = foot travel toward the robot, d = mouth-centre distance from its start. 0 if after the first 2 s the foot tilts over 10 degrees, lifts over 2 cm or moves over 12 cm. 0.25: D at least 2 cm and d at most 4.5 cm. 0.5: D at least 4 cm and d at most 3 cm. 0.75: D at least 5.5 cm, d at most 2 cm, foot y error at most 2 cm. 1.0: D 6.5-7.8 cm, d at most 1.2 cm, y error at most 1.2 cm, arm extension at least 6 cm, tilt and yaw at most 8 degrees, held for 1 s.",
+  "run_limit": "1,500 steps (75 seconds at 20 Hz)",
+  "reset_notes": "Let the arm slide back to rest and put the foot back on its start marks.",
+  "fidelity": "Rigid boxes; the slider is a spring-loaded prismatic joint (40 N/m, a modelled spring) with hard stops, not a physical force sensor. Scoring is computed from measured foot pose, arm extension and mouth position; nothing is code-driven.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-6NSSXP"
+}
