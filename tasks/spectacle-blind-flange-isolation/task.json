@@ -1,0 +1,20 @@
+{
+  "title": "Hold a spring-loaded flange joint open and slide a blind plate into the gap",
+  "category": "Safety and alignment",
+  "keywords": [
+    "bimanual",
+    "line isolation",
+    "blind plate",
+    "spring-loaded joint",
+    "hold open"
+  ],
+  "instruction": "Isolate the pipe before the pump is opened: hold the lower grey flange down and slide the orange blind plate into the gap, stem out front, then ease the flange back so it grips the plate.",
+  "context": "Before a line is opened for maintenance, a solid blind plate is fitted between two flanges so a closed valve is not the only barrier (O*NET 47-2152.02 Plumbers and Pipefitters, 51-8091 Chemical Plant and System Operators). A plate left out or mis-seated has injured maintenance crews.",
+  "setup": "Station table: a grey two-flange joint on a column in the middle (the upper flange is fixed, the lower flange hangs under it on a spring and is normally closed), with a yellow lug on the lower flange pointing left. To the right, an orange blind plate with a stem and a knob lies on a white tray. A green mark sits on the upper flange. Both arms are at rest.",
+  "scoring": "0.25: the lower flange is pulled down 22 mm or more while the plate is held 12 mm or more above the tray. 0.5: the plate is inside the gap while the gap is still 14 mm or more. 0.75: plate centred within 6 mm of the green mark, level, in the gap for 0.5 s while the flange is still held open. 1.0: flange eased back so the joint closes on the plate (gap 10-14 mm), plate centred and still for 1 s. Score 0 if the plate drops to the table, the joint base shifts more than 10 mm, or the flange sits on its stop for more than 1 s.",
+  "run_limit": "1,000 steps (50 seconds at 20 Hz)",
+  "reset_notes": "Let the lower flange return to its rest stop and put the orange plate back on the white tray.",
+  "fidelity": "Rigid boxes. The joint spring is a spring drive on a slider (100 N/m, modelled in the physics engine); the flange has no thread, bolts or gasket, and the plate is held by the spring pressure and friction only. Scoring is computed from measured poses and the slider position; nothing is code-driven.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-8FKYKN"
+}
