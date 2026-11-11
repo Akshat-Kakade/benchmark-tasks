@@ -1,0 +1,20 @@
+{
+  "title": "Withdraw a guarded sample rod uphill by exchanging grips hand over hand",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "hand over hand",
+    "regrip",
+    "rod withdrawal",
+    "gravity rollback"
+  ],
+  "instruction": "Pull the grey sample rod uphill through the blue right opening and orange left opening until its lower tip reaches the green band by the blue opening. Keep the rod from sliding back.",
+  "context": "Core samples, probe rods and borehole tubing are withdrawn from a guide or hole by hand over hand: one hand always holds the rod because it would run back down under its own weight (O*NET 47-5013 Service Unit Operators; 47-2061 Construction Laborers). Dropping the hold loses the sample.",
+  "setup": "Positions in cm from the midpoint between the two arm bases on the table (x forward, y left). A guide of three grey box shrouds (4.8 cm square, 3.2 cm bore) is aligned along y at x 30 and rises 7.5 degrees toward +y from (30, -36.7, 2.8 cm above the table). A grey rod 54 x 2 x 2 cm, 0.30 kg, with a red lower tip, slides through it on one free prismatic joint (travel 18.5 cm, no spring, damping 8 N.s/m), so it rolls back at about 5 cm/s when nobody holds it. The right bare section is marked blue, the left one orange, and a green band marks the target for the red tip next to the blue section. The pull needed is 17.2 cm; one hand can follow the rod only about 8 cm.",
+  "scoring": "Read from the rod travel s (mm along the guide) and the guide pose. 0 if after the first 2 s the guide moves more than 12 mm or tilts more than 6 degrees. Each level needs s held for 1 s with the rod moving at most 8 mm: 0.25 for s >= 30, 0.5 for s >= 90, 0.75 for s >= 160, 1.0 for 172 <= s <= 185.5 (the red tip at the green band). The rod spawns at its upper stop and rolls down in the first 4 s; scoring starts once it has been seen at 10 mm or less.",
+  "run_limit": "1,500 steps (75 seconds at 20 Hz)",
+  "reset_notes": "Let the rod slide back to the lower stop (it does so by itself) and put the guide back on its marks.",
+  "fidelity": "Rigid boxes; the rod is one spring-free slider (damping 8 N.s/m) on a heavy guide, and the rollback is real gravity on a 7.5 degree slope, not code-driven. Scoring is computed from the measured slider position and guide pose. Rod and shrouds are idealised (no sample, no friction of a real borehole).",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-372HFQ"
+}
