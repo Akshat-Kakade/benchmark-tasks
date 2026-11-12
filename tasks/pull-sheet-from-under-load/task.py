@@ -1,6 +1,6 @@
 """On the station table: a thin white slip-sheet (260 x 260 x 4 mm) lies on the table with an orange 80 mm block standing
-on its middle. A green tab (40 x 60 x 40 mm) stands up from the sheet's far-left edge. The left hand must pull the sheet
-out from under the block by its tab while the right hand keeps the block from moving.
+on its middle. A green tab (40 x 60 x 40 mm) stands up from the sheet's far-left edge. The sheet has to come out from under the
+block without the block moving (either arm may do either job; any direction).
 
 Run it:  inspect-robots run --embodiment yam_arena -E task=task.py --scorer task_score ...
 Demo:    python demo.py task.py demo_out
@@ -22,8 +22,8 @@ SCENE = "station"
 SCORE_OVER = "end"
 TOP = TABLE_TOP[SCENE]
 
-INSTRUCTION = ("Pull the white sheet out from under the orange block by its green tab with the left hand, while the "
-               "right hand keeps the orange block from moving.")
+INSTRUCTION = ("Take the white sheet out from under the orange block without moving the block: it must end up resting "
+               "on the table where it was.")
 
 WHITE = (0.95, 0.95, 0.95)
 GREEN = (0.10, 0.70, 0.20)
@@ -48,8 +48,8 @@ GATE_FROM_STEP = 40
 GATE_TILT_DEG = 20.0
 GATE_SHIFT_MM = 80.0
 GATE_LIFT_MM = 10.0
-ENGAGED_MM = 60.0          # 0.25: sheet moved this far in +y
-PARTIAL_MM = 100.0         # 0.5: sheet moved this far in +y
+ENGAGED_MM = 60.0          # 0.25: sheet moved this far (any direction)
+PARTIAL_MM = 100.0         # 0.5: sheet moved this far
 CLEAR_GAP_MM = 5.0         # sheet's bounding box this far from the block's footprint
 SHIFT_FULL_MM = 12.0
 SHIFT_PART_MM = 25.0
@@ -62,7 +62,7 @@ _STATE: dict = {}
 
 @on_reset
 def _reset_state(environment=None) -> None:
-    _STATE.update(start=None, step=0, scored=None, last=(0.0, False), tripped=False, block_hist=[], sheet_hist=[])
+    _STATE.update(full_run=0, start=None, step=0, scored=None, last=(0.0, False), tripped=False, block_hist=[], sheet_hist=[])
 
 
 @on_step
@@ -86,6 +86,18 @@ def _footprint(state, half_xyz):
     return pts.min(axis=0), pts.max(axis=0)
 
 
+def bottom_mm(block) -> float:
+    """Height (mm) of the block's lowest corner above the tabletop (4 mm while it rides on the sheet, 0 on the table)."""
+    lo, _ = _footprint_z(block)
+    return 1000.0 * (lo - TOP)
+
+
+def _footprint_z(state):
+    h = BLOCK_SIZE / 2
+    zs = [state.to_world(np.array([i, j, k]) * h)[2] for i in (-1, 1) for j in (-1, 1) for k in (-1, 1)]
+    return min(zs), max(zs)
+
+
 def _gap_mm(sheet, block) -> float:
     """Largest clearance (mm) between the sheet slab's and the block's footprints along x or y; negative if they overlap."""
     slo, shi = _footprint(sheet, (SHEET_SIZE / 2, SHEET_SIZE / 2, SHEET_T / 2))
@@ -104,9 +116,9 @@ def measures(objects, start=None):
     if start is None:
         start = (SHEET_XY[1], np.array(BLOCK_XY), TOP + SHEET_T + BLOCK_SIZE / 2)
     sy, bxy, bz = start
-    dy = 1000.0 * (float(sheet.pos[1]) - sy)
+    dy = 1000.0 * math.hypot(float(sheet.pos[1]) - sy, float(sheet.pos[0]) - SHEET_XY[0])   # any pull direction
     shift = 1000.0 * float(np.linalg.norm(np.asarray(block.pos[:2]) - bxy))
-    lift = 1000.0 * (float(block.pos[2]) - bz)
+    lift = 1000.0 * (float(block.pos[2]) - bz)            # centre rise vs start (gate only)
     return dy, shift, _tilt_deg(block), lift, _gap_mm(sheet, block)
 
 
@@ -128,30 +140,44 @@ def _update(objects) -> tuple[float, bool]:
     still = (len(hb) == HOLD_STEPS and all(np.linalg.norm(p - hb[-1]) < 0.001 for p in hb)
              and all(np.linalg.norm(p - hs[-1]) < 0.002 for p in hs))
     clear = gap >= CLEAR_GAP_MM
+    bottom = bottom_mm(block)                      # block bottom vs the TABLETOP, not vs its start pose
+    seated = bottom <= REST_LIFT_MM
     if _STATE["tripped"]:
+        _STATE["full_run"] = 0
         result = (0.0, False)
-    elif clear and shift <= SHIFT_FULL_MM and tilt <= TILT_FULL_DEG and lift <= REST_LIFT_MM:
-        result = (1.0, bool(still))
-    elif clear and shift <= SHIFT_PART_MM:
+    elif clear and seated and shift <= SHIFT_FULL_MM and tilt <= TILT_FULL_DEG:
+        # full-credit condition: must hold (with both objects still) for HOLD_STEPS in a row before 1.0 is returned
+        _STATE["full_run"] += 1
+        done = _STATE["full_run"] >= HOLD_STEPS and bool(still)
+        result = (1.0 if done else 0.75, done)
+    elif clear and seated and shift <= SHIFT_PART_MM:
+        _STATE["full_run"] = 0
         result = (0.75, False)
+    elif clear and shift <= SHIFT_PART_MM:         # block still suspended above the table: capped at 0.5
+        _STATE["full_run"] = 0
+        result = (0.5, False)
     elif clear or dy >= PARTIAL_MM:
+        _STATE["full_run"] = 0
         result = (0.5, False)
     elif dy >= ENGAGED_MM:
+        _STATE["full_run"] = 0
         result = (0.25, False)
     else:
+        _STATE["full_run"] = 0
         result = (0.0, False)
     _STATE["last"] = result
     return result
 
 
 def success(objects) -> bool:
-    """Sheet fully out (>= 5 mm clear of the block's footprint), block moved <= 12 mm, tilted <= 5 degrees, resting on
-    the table (<= 3 mm up), block and sheet still for 1 s; never lifted > 10 mm, tilted > 20 deg or moved > 80 mm."""
+    """Sheet fully out (>= 5 mm clear of the block's footprint), block moved <= 12 mm, tilted <= 5 degrees, block bottom
+    within 3 mm of the tabletop, block and sheet still, all true for 20 consecutive steps (1 s); never lifted > 10 mm, tilted > 20 deg or moved > 80 mm."""
     return _update(objects)[1]
 
 
 def score(objects) -> float:
-    """0.25 sheet pulled 60 mm in +y; 0.5 pulled 100 mm, or clear but the block moved 25-80 mm; 0.75 clear with the block
-    moved 12-25 mm or tilted 5-20 degrees; 1.0 clear, block moved <= 12 mm, tilt <= 5, resting, still 1 s. Zero if the
+    """0.25 sheet pulled 60 mm in any direction; 0.5 pulled 100 mm, or clear but the block moved 25-80 mm; 0.75 clear and seated (block
+    bottom <= 3 mm above the tabletop) with the block moved 12-25 mm, or all full conditions true but the 1 s hold not yet
+    complete; clear but block suspended above the table: at most 0.5; 1.0 only after the full conditions held 20 steps in a row. Zero if the
     block was ever lifted > 10 mm, tilted > 20 degrees or moved > 80 mm after step 40."""
     return _update(objects)[0]

@@ -25,9 +25,11 @@ def ps(pos, tilt=0.0):
 
 
 def scene(dy=0.0, shift=(0.0, 0.0), tilt=0.0, lift=0.0):
-    """Sheet pulled dy mm in +y; block moved shift (mm, x y), tilted, lifted lift mm."""
+    """Sheet pulled dy mm in +y; block moved shift (mm, x y), tilted, held lift mm above where it would rest (on the
+    sheet before it is clear, on the table after: the block drops 4 mm once the sheet is out)."""
+    drop = M.SHEET_T if dy >= 135 else 0.0
     return {"sheet": ps(S0 + [0, dy / 1000, 0]),
-            "load": ps(B0 + [shift[0] / 1000, shift[1] / 1000, lift / 1000], tilt)}
+            "load": ps(B0 + [shift[0] / 1000, shift[1] / 1000, lift / 1000 - drop], tilt)}
 
 
 @pytest.fixture(autouse=True)
@@ -77,7 +79,29 @@ def test_full_score_and_hold():
 
 
 def test_full_needs_the_hold_second():
-    assert run(hold(scene(dy=150), n=10)) == (1.0, False)
+    assert run(hold(scene(dy=150), n=10)) == (0.75, False)      # never 1.0 before the full second
+    M._reset_state()
+    assert run(hold(scene(dy=150), n=19)) == (0.75, False)
+    M._reset_state()
+    assert run(hold(scene(dy=150), n=20)) == (1.0, True)
+
+
+def test_suspended_block_never_full_credit():
+    for lift in (4.0, 8.0):                                      # held above the table, within the lift gate
+        M._reset_state()
+        assert run(hold(scene(dy=150, lift=lift), n=60)) == (0.5, False)
+
+
+def test_hold_restarts_if_block_moves():
+    moving = [scene(dy=150, shift=(0, 2.0 * (i % 2))) for i in range(10)]
+    M._reset_state()
+    assert run([scene()] * 45 + [scene(dy=150)] * 15 + moving + [scene(dy=150)] * 5)[0] == 0.75
+
+
+def test_block_height_is_measured_against_the_table():
+    # block resting on the table 6 mm above the sheet's start level is NOT seated
+    M._reset_state()
+    assert run(hold(scene(dy=150, lift=6.0), n=40))[0] == 0.5
 
 
 def test_clear_boundary_is_5mm():
@@ -85,10 +109,10 @@ def test_clear_boundary_is_5mm():
     # edge after pull: -90 + dy; gap = (-90 + dy) - 40 = dy - 130 mm; clear needs gap >= 5 -> dy >= 135
     assert run(hold(scene(dy=134)))[0] == 0.5
     M._reset_state()
-    assert run(hold(scene(dy=136)))[0] == 1.0
+    assert run(hold(scene(dy=136), n=25))[0] == 1.0
 
 
-@pytest.mark.parametrize("kw", [dict(tilt=25), dict(shift=(0, 85)), dict(lift=12)])
+@pytest.mark.parametrize("kw", [dict(tilt=25), dict(shift=(0, 85)), dict(lift=16)])
 def test_zero_gate_is_sticky(kw):
     seq = [scene()] * 45 + [scene(dy=150, **kw)] * 3 + [scene(dy=150)] * 30
     assert run(seq) == (0.0, False)
@@ -118,7 +142,7 @@ def test_every_level_reachable():
     got = set()
     for s in [scene(), scene(dy=70), scene(dy=110), scene(dy=170, shift=(0, 18)), scene(dy=150)]:
         M._reset_state()
-        got.add(run(hold(s))[0])
+        got.add(run(hold(s, n=25))[0])
     assert got == {0.0, 0.25, 0.5, 0.75, 1.0}
 
 
@@ -129,3 +153,9 @@ def test_blind_words():
         p = ROOT / f
         if p.exists():
             assert not banned.search(p.read_text()), f
+
+
+def test_demo_reads_no_simulator_poses():
+    src = (ROOT / "demo.py").read_text()
+    for bad in ("states(", "object_states", "_env", "ctx.states"):
+        assert bad not in src, bad

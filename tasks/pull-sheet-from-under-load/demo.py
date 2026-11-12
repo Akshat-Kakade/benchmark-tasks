@@ -2,10 +2,10 @@
 
     python demo.py task.py demo_out [--max-steps 2000] [--no-record]
 
-The right arm brings a closed fist down on the block's +y face (the side the sheet is pulled toward) and presses
-until the measured block pose says it is in contact, then a few mm more. The left arm pinches the green tab across
-its 40 mm width and pulls the sheet in +y at 40 mm/s until the measured sheet is clear of the block, re-pushing the
-brace if the block creeps. Then the left hand lets go, both hands retreat upward and hold.
+OPEN LOOP: no simulator object state is read; every target comes from the nominal layout in task.py. The right arm
+brings a closed fist down on the block's +y face (the side the sheet is pulled toward) and presses a fixed distance. The
+left arm pinches the green tab across its 40 mm width and pulls the sheet in +y at 40 mm/s for a fixed 165 mm. Then the
+left hand lets go, both hands retreat upward and hold.
 Writes one MP4 per camera, setup.png and result.json to the output folder.
 
 DEMO_VARIANT: no_brace (right arm idle), no_pull (brace only), pinch (right hand pinches the block's x sides instead
@@ -26,8 +26,11 @@ import numpy as np
 CONTROL_HZ = 20
 TOP = 0.7475
 PULL_SPEED = 0.040           # m/s
-OVERSHOOT = 0.006            # brace pushed this far past first contact
-CLEAR_MARGIN = 0.03          # keep pulling this far past "clear"
+FIST_CONTACT = 0.0575       # fist TCP offset from the block face at first contact (from the failed run: 18 mm shove)
+OVERSHOOT = 0.0075           # brace pushed this far past first contact
+TAB_DY = 0.025   # pinch point is this far +y of the tab centre (hand TCP lies off the finger gap; seen in the wrist camera)
+BRACE_RAMP = 0.027   # fist advances this far (-y) over the pull to hold the block against the sheet drag
+PULL_DIST = 0.165            # tab travel in +y (sheet is clear of the block after ~0.135)
 BRACE_Z = TOP + 0.004 + 0.045   # TCP height for the fist on the block's +y face (pads 32 mm above the table)
 TAB_Z = TOP + 0.030          # TCP height pinching the tab (pad bottoms 17 mm above the table)
 HOVER_Z = TOP + 0.16
@@ -120,59 +123,48 @@ def script(task, ctx):
     flip_l, _ = _grips(L.base, left_pts)
     rot_r = _rz(math.pi / 2) @ grip_rotation(flip_r)
     rot_l = _rz(math.pi / 2) @ grip_rotation(flip_l)
-    st = ctx.states()
-    block0, sheet0 = st["load"], st["sheet"]
+    # Open loop: every target is computed from the nominal layout in task.py; no simulator object state is read.
+    bx, by0 = task.BLOCK_XY
     half = task.BLOCK_SIZE / 2
-    by0 = float(block0.pos[1])
+    sx, sy = task.SHEET_XY
 
-    # 1. Right arm: fist on the block's +y face.
+    # 1. Right arm: fist on the block's +y face, then pressed a fixed 1.5 mm + OVERSHOOT further (soft arm, no sensing).
     brace_y0 = None
     if variant == "pinch":
-        yield from R.move(np.array([block0.pos[0], by0, HOVER_Z]), rot_r, 2.5, grip=1.0)
-        yield from R.move(np.array([block0.pos[0], by0, BRACE_Z]), rot_r, 1.5)
+        yield from R.move(np.array([bx, by0, HOVER_Z]), rot_r, 2.5, grip=1.0)
+        yield from R.move(np.array([bx, by0, BRACE_Z]), rot_r, 1.5)
         yield from R.set_grip(0.0, 1.0)
         yield from wait(0.3)
     elif variant not in ("no_brace", "fast"):
-        yield from R.move(np.array([block0.pos[0], by0 + half + 0.045, HOVER_Z]), rot_r, 2.5, grip=0.0)
-        yield from R.move(np.array([block0.pos[0], by0 + half + 0.045, BRACE_Z]), rot_r, 1.5)
-        y = by0 + half + 0.045
-        for _ in range(int(6.0 * CONTROL_HZ)):            # advance 20 mm/s until the block is pushed 1.5 mm
-            b = ctx.states()["load"]
-            if by0 - float(b.pos[1]) > 0.0015:
-                break
-            y -= 0.020 / CONTROL_HZ
-            R.aim(np.array([block0.pos[0], y, BRACE_Z]), rot_r)
-            yield
-        brace_y0 = y - OVERSHOOT
-        yield from R.move(np.array([block0.pos[0], brace_y0, BRACE_Z]), rot_r, 0.6)
+        y_touch = by0 + half + FIST_CONTACT          # TCP y at which the fist surface meets the +y face (measured)
+        y_app = y_touch + 0.012
+        yield from R.move(np.array([bx, y_app, HOVER_Z]), rot_r, 2.5, grip=0.0)
+        yield from R.move(np.array([bx, y_app, BRACE_Z]), rot_r, 1.5)
+        yield from R.move(np.array([bx, y_touch, BRACE_Z]), rot_r, 0.6)
+        brace_y0 = y_touch - OVERSHOOT
+        yield from R.move(np.array([bx, brace_y0, BRACE_Z]), rot_r, 0.6)
 
     if variant == "no_pull":
         yield from wait(4.0)
         return
 
-    # 2. Left arm: pinch the tab across its 40 mm width.
-    tab = sheet0.to_world((0.0, 0.15, 0.018))
+    # 2. Left arm: pinch the tab across its 40 mm width (tab centre from the nominal layout).
+    tab = np.array([sx, sy + 0.15 + TAB_DY, TOP + 0.030])
     yield from L.move(np.array([tab[0], tab[1], HOVER_Z]), rot_l, 2.5, grip=1.0)
     yield from L.move(np.array([tab[0], tab[1], TAB_Z]), rot_l, 1.5)
     yield from L.set_grip(0.0, 0.8)
     yield from wait(0.3)
 
-    # 3. Pull +y until the measured sheet is clear of the block, keeping the brace against creep.
+    # 3. Pull +y a fixed distance (sheet clear after ~135 mm, plus margin).
     speed = 0.150 if variant == "fast" else PULL_SPEED
     ty = float(tab[1])
-    target_extra = None
-    for _ in range(int(14.0 * CONTROL_HZ)):
-        s = ctx.states()
-        gap = task._gap_mm(s["sheet"], s["load"])
-        if gap >= task.CLEAR_GAP_MM and target_extra is None:
-            target_extra = ty + CLEAR_MARGIN
-        if target_extra is not None and ty >= target_extra:
-            break
+    ty_end = ty + PULL_DIST
+    ty0 = ty
+    while ty < ty_end:
         ty += speed / CONTROL_HZ
         L.aim(np.array([tab[0], ty, TAB_Z]), rot_l)
         if brace_y0 is not None:
-            creep = max(0.0, float(s["load"].pos[1]) - by0)
-            R.aim(np.array([block0.pos[0], brace_y0 - creep, BRACE_Z]), rot_r)
+            R.aim(np.array([bx, brace_y0 - BRACE_RAMP * min(1.0, (ty - ty0) / 0.06), BRACE_Z]), rot_r)
         yield
 
     # 4. Let go, retreat up, hold.
@@ -192,11 +184,6 @@ class Ctx:
         self.emb = emb
         self.left = Arm("left", station.BASES["left"])
         self.right = Arm("right", station.BASES["right"])
-
-    def states(self):
-        from yam_arena.scene import object_states
-
-        return object_states(self.emb._env, self.emb.task.names)
 
     def action(self):
         from inspect_robots.types import Action
@@ -245,13 +232,8 @@ def run(task_path: str, out_dir: str, max_steps: int = 2000, record: bool = True
         steps += 1
         info = res.info
         snap(res.observation)
-        if steps % 100 == 0 or (os.environ.get("DEMO_DEBUG") and steps % 10 == 0):
+        if steps % 100 == 0:
             msg = f"step {steps} score {info.get('score')}"
-            if os.environ.get("DEMO_DEBUG"):
-                s = ctx.states()
-                dy, shift, tilt, lift, gap = task.measures(s, task._STATE["start"])
-                msg += (f" sheet_dy {dy:.1f} block_shift {shift:.1f} tilt {tilt:.1f} lift {lift:.1f} gap {gap:.1f} "
-                        f"tripped {task._STATE['tripped']}")
             print(msg, flush=True)
         if res.terminated:
             success = res.termination_reason == "success"
