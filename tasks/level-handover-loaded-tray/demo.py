@@ -4,8 +4,8 @@
 
 The left arm pinches the rack's outer handle (+y end), lifts the rack 70 mm and carries it level to the middle of the
 table. The right arm pinches the other handle (-y end); the left hand lets go and moves away; the right arm carries the
-rack to the right pad, lowers it, lets go and withdraws. Closed loop on the measured rack pose and on each hand's
-measured position (obs joint positions).
+rack to the right pad, lowers it, lets go and withdraws. The plan is open loop on the known scene layout (it never reads object poses); the only feedback is each arm's own
+joint positions (obs state) to cancel tracking error. The scorer reads object poses and gripper links, the demo does not.
 
 DEMO_VARIANT: settle (hold only), no_handover (left stops at y=+0.15 holding the rack), early_release (left lets go at the
 middle before the right hand has it), tilt20 (left tips the rack 20 degrees while carrying), place_yaw15 (rack set down
@@ -125,6 +125,7 @@ HY = 0.135                 # handle offset from the rack centre (y), rack frame
 HZ = 0.030                 # pinch height above the rack origin
 LIFT = 0.070               # carry height of the rack above its pad
 PAD_THK = 0.003
+PRESS = float(os.environ.get('PRESS', '0.004'))   # m the command goes below the rack's resting height
 
 
 def script(task, ctx):
@@ -139,10 +140,9 @@ def script(task, ctx):
         return
     for _ in range(12):                          # let the teleported parts settle before reading baselines
         yield
-    r0 = ctx.states()["rack"]
-    z_rest = float(r0.pos[2])                    # rack origin height at rest (measured)
-    x_c = float(r0.pos[0])
-    yL = float(r0.pos[1])
+    z_rest = float(task.RACK_Z)                  # rack origin height on its pad (scene constant: the layout is fixed)
+    x_c = float(task.PAD_L[0])
+    yL = float(task.PAD_L[1])
     yR = task.PAD_R[1]
     mid = 0.06 if variant == "mid_alt" else 0.0
     yaw_l = reachable_yaw(L, np.array([x_c, mid + HY, z_rest + LIFT + HZ]))
@@ -156,17 +156,12 @@ def script(task, ctx):
     oL = float(os.environ.get('OFF_L', '0'))
     oR = float(os.environ.get('OFF_R', '0'))
 
-    def rack_now():
-        return ctx.states()["rack"]
-
     # ---- left hand: grab the +y handle on the left pad, lift, carry to the middle -------------------------------------
     hl = np.array([x_c, yL + HY + oL, z_rest + HZ])
     yield from L.move(hl + [0, 0, 0.09], gl, 2.5, grip=1.0)
     yield from L.move(hl, gl, 1.5)
-    pre = rack_now().pos.copy()
     yield from L.set_grip(0.0, 1.0)
     yield from wait(0.4)
-    print('LCLOSE rack shift', np.round(rack_now().pos - pre, 4).tolist(), flush=True)
     L.feedback(True)
     tilt = math.radians(20) if variant == "tilt20" else 0.0
     stop_y = 0.15 if variant == "no_handover" else mid
@@ -191,16 +186,14 @@ def script(task, ctx):
         yield from wait(3.0)
         return
 
-    # ---- right hand: grab the -y handle (measured rack pose), then the left lets go ------------------------------------
-    r = rack_now()
-    hr = r.to_world((0.0, -HY + oR, HZ))
+    # ---- right hand: grab the -y handle at the planned handover pose, then the left lets go ---------------------------
+    rack_c = np.array([x_c, mid, z_rest + LIFT])  # where the left hand holds the rack (plan; no pose reading)
+    hr = rack_c + [0.0, -HY + oR, HZ]
     yield from Rr.move(hr + [0, 0, 0.09], gr, 3.0, grip=1.0)
     yield from Rr.move(hr, gr, 1.5)
-    pre = rack_now().pos.copy()
     yield from Rr.set_grip(0.0, 1.0)
     yield from wait(0.5)
-    print('RCLOSE rack shift', np.round(rack_now().pos - pre, 4).tolist(), flush=True)
-    off = np.array(Rr.pos) - rack_now().pos      # hand-to-rack offset as grasped, rack still carried by the left hand
+    off = np.array([0.0, -HY + oR, HZ])           # hand-to-rack offset as grasped
     Rr.gain = float(os.environ.get('GAIN_R', '0.04'))
     Rr.feedback(True)
     yield from L.set_grip(1.0, 0.8)
@@ -209,8 +202,7 @@ def script(task, ctx):
     L.feedback(False)
 
     # ---- right hand carries the rack to the right pad, lowers it, lets go -----------------------------------------------
-    r = rack_now()
-    y0 = float(r.pos[1])
+    y0 = mid
     place_yaw = math.radians(15) if variant == "place_yaw15" else 0.0
     n = int(6.0 * CONTROL_HZ)
     for k in range(1, n + 1):
@@ -225,19 +217,14 @@ def script(task, ctx):
         c = np.array([x_c, yR, z_rest + LIFT * (1 - s) + 0.001 * s])
         Rr.aim(c + off, _rz(place_yaw) @ gr)
         yield
-    # trim the position on the measured rack pose until it rests on the pad, then let go
-    for _ in range(int(2.0 * CONTROL_HZ)):
-        r = rack_now()
-        e = np.array([x_c, yR, z_rest]) - r.pos
-        e[2] = max(e[2], -0.01) if r.pos[2] > z_rest + 0.0015 else 0.0
-        Rr.aim(Rr.pos + 0.25 * e, _rz(place_yaw) @ gr)
+    for k in range(1, int(1.5 * CONTROL_HZ) + 1):         # press gently into the pad (open loop), so the plate is seated
+        c = np.array([x_c, yR, z_rest - PRESS * k / (1.5 * CONTROL_HZ)])
+        Rr.aim(c + off, _rz(place_yaw) @ gr)
         yield
-    print('PLACED rack', np.round(rack_now().pos, 4).tolist(), flush=True)
     yield from wait(0.5)
     Rr.feedback(False)
     yield from Rr.set_grip(1.0, 0.8)
     yield from wait(0.8)
-    print('RELEASED rack', np.round(rack_now().pos, 4).tolist(), flush=True)
     yield from Rr.move(Rr.pos + [0, 0, 0.12], Rr.rot, 3.0)
     yield from wait(2.0)
 
@@ -252,11 +239,6 @@ class Ctx:
         self.right = Arm("right", station.BASES["right"])
         self.left.read = lambda: np.asarray(self.last_state)[0:6] if np.any(self.last_state) else None
         self.right.read = lambda: np.asarray(self.last_state)[7:13] if np.any(self.last_state) else None
-
-    def states(self):
-        from yam_arena.scene import object_states
-
-        return object_states(self.emb._env, self.emb.task.names)
 
     def action(self):
         from inspect_robots.types import Action
@@ -306,20 +288,8 @@ def run(task_path: str, out_dir: str, max_steps: int = 1800, record: bool = True
         info = res.info
         ctx.last_state = next(iter(res.observation.state.values()))
         snap(res.observation)
-        if steps % 100 == 0 or (os.environ.get("DEMO_DEBUG") and steps % int(os.environ.get("DEBUG_EVERY", "20")) == 0):
-            msg = f"step {steps} score {info.get('score')}"
-            if os.environ.get("DEMO_DEBUG"):
-                st = ctx.states()
-                level, perfect, inf = task.classify(st, dict(task._STATE))
-                rk = st["rack"]
-                msg += f" | rack {np.round(rk.pos, 3).tolist()} tilt {task.tilt_deg(rk):.1f} yaw {task.yaw_deg(rk):.1f} "
-                msg += " ".join(f"{k} {v:.3f}" if isinstance(v, float) else f"{k} {v}" for k, v in inf.items())
-                msg += ' cups ' + ' '.join(str(np.round(rk.to_local(st[c].pos)[:2] * 1000, 0).tolist()) for c in task.CUP_NAMES)
-                from yam_arena import ik as _ik
-                for nm, arm_, sl in (("L", ctx.left, slice(0, 6)), ("R", ctx.right, slice(7, 13))):
-                    pa, _r = _ik.tcp_pose(np.asarray(ctx.last_state)[sl], arm_.base)
-                    msg += f"\n   {nm} cmd {np.round(arm_.pos + arm_.corr, 3).tolist()} actual {np.round(pa, 3).tolist()} g {arm_.grip:.2f}"
-            print(msg, flush=True)
+        if steps % 100 == 0:
+            print(f"step {steps} score {info.get('score')}", flush=True)
         if res.terminated:
             success = res.termination_reason == "success"
             break
