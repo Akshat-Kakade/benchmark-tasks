@@ -1,0 +1,20 @@
+{
+  "title": "Sweep broken ceramic pieces from under a low bench into the pan with a two-handled squeegee",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "sweeping",
+    "squeegee",
+    "tool use",
+    "cleaning"
+  ],
+  "instruction": "A cup has smashed under the bench. Get every piece of it out from under the bench and into the green pan, then let go of the squeegee and leave it and the pieces still.",
+  "context": "Done by: janitors and cleaners (O*NET 37-2011.00), who sweep up broken crockery and debris with push brooms and wide push heads (squeegee or broom heads) under counters and benches; the fragments are sharp and the gap is too low for a hand. The squeegee's middle is under the bench, so only its two end handle blocks can be held, one per arm. Unlike #145 (pan held while a brush sweeps) and #419 (beam squared), the load here is four loose pieces that start under an overhang and the scorer counts what ends on the pan. A dustpan is simplified to a flat pan.",
+  "setup": "Positions in cm in the station frame (x forward, y left; table top 74.75 cm). Squeegee head: blue blade 3 x 42 x 3 cm, 1.0 kg, friction 0.35, centre x 20, y 0, with a 4 x 4 x 6 cm orange handle block on the table at y +23 and y -23. Bench: four rails 23 x 3 x 2 cm at x 15-38, y -10.5, -3.5, +3.5, +10.5 (4 cm gaps), underside 6 cm above the table, a 2 x 24 x 2 cm cross bar at x 16 and two 2 x 2 cm posts at x 16, y +-11. Four ceramic pieces 2.2 x 2.2 x 1.2 cm, 14 g, friction 0.4, at (30.0, -7.0), (28.5, 0.4), (31.5, -0.4), (30.5, 7.0) in the gaps. Green pan: floor 7.5 x 28 cm level with the table, centre x 45.5, with 1.2 cm high green walls on both sides and the far end, open on the sweep side.",
+  "scoring": "Measured at the end, the full state held 1 s. 0 (latched) if the head tilts or yaws more than 8 degrees, a piece leaves the table, or the blade rises 5 mm for more than 0.5 s. 0.25 / 0.5 / 0.75 for one / two / three piece centres on the pan (at most 0.5 unless both handle blocks advanced 16 cm). 1.0 if all four centres are 8 mm or more inside the pan, none under the bench, the blade 4 mm clear of the pieces, both grippers open and 4 cm from the squeegee, and everything still.",
+  "run_limit": "1200 steps (60 seconds at 20 Hz)",
+  "reset_notes": "Place the squeegee square in front of the bench and the four pieces under the rails at the listed positions.",
+  "fidelity": "Rigid boxes only, no joints or sensors. Pieces are 12 mm rigid boxes (real shards 3-5 mm); bench is rails on near posts; pan floor flush with the table (only the green walls show in the 320x176 frame), no sweep-side lip. Squeegee 1.0 kg (a light one is ~0.45 kg; at 0.45 kg one arm sufficed), rigid blade, friction 0.35. Scoring uses object poses and finger gaps.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-9WXDAT"
+}
