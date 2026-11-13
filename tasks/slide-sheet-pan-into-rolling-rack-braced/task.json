@@ -1,0 +1,21 @@
+{
+  "title": "Slide a loaded sheet pan into the second slot of a rolling rack without letting the rack roll",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "bracing",
+    "rolling rack",
+    "sheet pan",
+    "commercial kitchen",
+    "bakery"
+  ],
+  "instruction": "Put the full baking tray into the second slot of the rolling rack without letting the rack move.",
+  "context": "Done by: cooks, restaurant (O*NET 35-2014.00; about 1.4 million US workers per BLS (May 2023: 1,412,350), one of the largest kitchen occupations), who load and unload sheet pans into wheeled speed racks every shift. The rack rolls on casters and runs away from the push of the pan, so the cook steadies the rack with one hand while the other hand slides the pan in; an unbraced rack rolls off with the pan half in. Closest on the board: unload-tray-from-pass-shelf (#512, pulling a tray out with no rolling base) and the slip-sheet tasks (brace a load, pull a sheet); here the new part is bracing a free-rolling base against the push of the load while the load is lifted to the right slot and slid in.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left). Rack (one rigid body, aluminium, simulated mass 6 kg; the same parts in solid aluminium would be about 8 kg): base plate 25.6 x 40.4 x 1.5 cm raised 1 cm on four sprung caster feet (4 x 4 x 1 cm, friction 0.01, the only table contact); two side panels 25 x 0.5 x 20.5 cm, 35.4 cm apart inside; rear stop panel 0.6 x 36.4 x 20.5 cm; two front posts 2 x 2 x 24 cm at the front corners; three pairs of ledge ribs (2.5 cm wide, 0.6 cm thick, 25 cm long, friction 0.45, on light spring sliders) with top faces at 5.5, 11.0 and 16.5 cm above the table. Open front at x = 34, centred on y = -3. Counter: grey plate 27 x 36 x 1.5 cm, centred x 20.45, y -3, fixed. Pan (quarter sheet pan, friction 0.45, simulated mass 0.35 kg with load): 24.1 x 33.0 cm floor, 2 cm walls, wall and floor modelled 3 mm thick for collision, a grab handle 0.8 x 8 x 3.6 cm (x, y, z) on the rear wall, ten cookie blocks 4 x 4 x 1.2 cm; it starts on the counter, long side along y, centred y -3, front edge 1.5 cm before the rack.",
+  "scoring": "0 if at any step the rack has moved 40 mm or turned 8 degrees or tipped, the pan has tilted 15 degrees (spill) or the pan has fallen off the counter or rack. Otherwise judged on the end state: 0.25 pan at slot-2 height (within 10 mm of the rib) at the rack mouth; 0.5 pan at least 12 cm into slot 2 (or fully into another slot) and level (<= 5 degrees); 0.75 pan fully in slot 2 (front edge within 10 mm of the rear stop), within 10 mm of the slot-2 rib height, centred within 12 mm and level; 1.0 as 0.75 with the pan on the ribs (within 4 mm), both grippers open, pan, rack and both arms still, for 20 consecutive steps (1 s).",
+  "run_limit": "900 steps (45 seconds at 20 Hz)",
+  "reset_notes": "Put the rack with its open front at x = 34 cm, centred y = -3 cm, and the pan on the counter as described; nothing is consumed.",
+  "fidelity": "Real rack: ~1.8 m, 20-30 kg, casters; here a 0.24 m, 6 kg segment on four sprung low-friction (0.01) feet. Slot pitch 55 mm (real 75-90). Real quarter pan: 1 mm aluminium ~0.28 kg (steel ~0.65 kg) plus cookies; simulated 0.35 kg total, 3 mm collision walls, rigid cookies, no heat. Handle stands in for the rolled rim. Rack moved 34 of 40 mm in the demo; runs repeat exactly (object_jitter 0). Scorer reads poses; demo reads joint angles.",
+  "scores": "Dream-1 run: 0.0 (ran with the earlier wording 'Put the full baking tray into the second slot of the rolling rack, and leave the rack where it stands.'); demo: 1.0 (scripted, ignores the instruction text)",
+  "media": "M-UZDE4G"
+}
