@@ -13,13 +13,14 @@ a pan left sitting on the edge is a scald hazard and a food-safety loss. Categor
 
 ## Construct validity
 - Real size: GN 1/2 footprint 325 x 265 mm, 40 mm deep (a standard GN depth), 10 mm rim flange, a 2 mm wall, a flange-supported
-  pan in a counter opening (the real way these pans are held) and a real 3.0 kg load (about 0.7 kg pan plus about 2.3 kg of food).
+  pan in a counter opening (the real way these pans are held) and a 3.0 kg carried mass, which is what a real loaded pan weighs (a real GN 1/2 40 mm pan is thin 0.8-1 mm steel, about 0.7 kg, plus about 2.3 kg of food).
 - The arms really carry the 3.0 kg: no mass was scaled down (a 1.5 kg share per arm).
 - The well is a counter slab with a pit that has the clearance a real well has (6 mm per side); the flange, not the floor, carries the pan.
 
 ## What is simplified / not modelled
 - The food is a fused box inside the pan body (30 mm deep, orange-brown): no slosh and no fluid. The spill rule is a tilt limit of
   8 degrees (real liquid depth 30 mm in a 265 x 325 mm pan spills at a few degrees of tilt plus slosh), checked every step.
+- Mass construction: the simulated pan is one 3.0 kg rigid body with 3 mm floor and 2 mm walls (thicker than real steel, which alone would be about 2.8 kg); the 3.0 kg is the total simulated carried mass (pan plus food), not a steel-only mass, and the food box does not add to it.
 - The pan is one rigid body with square corners (real pans have rounded corners and stacking lugs); handles are two upright
   orange tabs 24 x 20 x 45 mm on the short flanges (real pans have drop handles or no handle, and are held by the rim).
 - The well is four fixed boxes standing on the table (40 mm high), not recessed into a heated bath; no water bath, no heat.
@@ -77,14 +78,15 @@ feedback is each arm's own joint positions (the `state` observation), integrated
 reads no object or simulator pose.
 
 ## How this differs from nearby tasks
-- #1759 dock-a-laptop-level lifts a rigid laptop by both sides and docks it with a press; here the load is a heavy open vessel with
-  a spill limit, the opening has a 6 mm clearance and the pan is released resting on its own flange.
-- #1685 tip-full-pan tilts a pan on purpose and #1695 tart-ring lowering lowers a ring over a tart; neither seats a loaded pan
-  level in a tight pit.
-- #649 steam-table well (arrangement of several pans) and #1363 steam-table lids are different objectives.
+- #1759 dock-a-laptop-level: both sides of a light rigid laptop are lifted and docked with a press. Here the load is a real-size 3.0 kg
+  open pan carried level by two upright tabs, with zero gates for tilt over 8 degrees (spill) and for speed over 0.5 m/s (dropped), a
+  seating into a 6 mm-per-side pit where a misaligned pan jams on the rim, and a required release (grippers open and clear, 1 s still).
+- #1695 tart-ring lowering: a ring is lowered over a tart with no load or spill limit; nothing is seated on a flange.
+- #1685 tip-full-pan tilts a pan on purpose; here any tilt is the failure.
+- #649 steam-table well (arranging several pans) and #1363 steam-table lids are different objectives.
 
 ## Real-world build and reset
-A stainless GN 1/2 x 40 mm pan filled with 2.3 kg of water-based food (or sand with a lid), two welded 24 x 20 x 45 mm tabs on the short
+A stainless GN 1/2 x 40 mm pan (about 0.7 kg) filled with about 2.3 kg of water-based food (or sand with a lid), 3.0 kg in total, two welded 24 x 20 x 45 mm tabs on the short
 flanges, a counter of 40 mm plywood strips with a 277 x 337 mm opening. Reset: pan on the table 4 mm from the counter, tabs along y.
 
 ## Measured in the simulator
@@ -94,11 +96,11 @@ All numbers are from runs in the simulator (object_jitter=0, deterministic). Pea
 | Demo (open loop, `demo.py`) | 1.0 | success at step 583, run ends at 592; arms carry the full 3.0 kg |
 | Dream-1 run (900 steps) | 0.0 | the pan was not touched |
 | `settle` / do nothing | 0.0 | pan rests at its start, no gate |
-| `one_arm` (left arm only) | 0.0 | pan tilts and drops (zero gate) |
-| `tilt` (left side lowered 50 mm less) | 0.0 | roll reached 8.5 degrees during lowering: spill gate, although the pan ended seated |
-| `drop` (release over the well, no lowering) | 0.0 | speed gate |
-| `stop_above` (hold over the well) | 0.25 | |
-| `no_release` (seat but keep holding) | 0.75 | |
-| `jam` (15 mm toward the base) | 0.0 | pan jammed on the rim and pitched 8.2 degrees (gate) |
+| [pre-offset] `one_arm` (left arm only) | 0.0 | pan tilts and drops (zero gate) |
+| [pre-offset] `tilt` (left side lowered 50 mm less) | 0.0 | roll reached 8.5 degrees during lowering: spill gate, although the pan ended seated |
+| [pre-offset] `drop` (release over the well, no lowering) | 0.0 | speed gate |
+| [pre-offset] `stop_above` (hold over the well) | 0.25 | |
+| [pre-offset] `no_release` (seat but keep holding) | 0.75 | |
+| `jam` (15 mm toward the base; measured before the 4 mm x-offset, so NOT current: the demo now commands about 11 mm net) | 0.0 | pan jammed on the rim and pitched 8.2 degrees (gate) |
 | `off_alt` / `off_alt2` (+3/+4 mm, -3/-4 mm) | 1.0 / 1.0 | two valid solutions |
-`one_arm`, `tilt`, `drop`, `stop_above`, `no_release` and `jam` were measured before a 4 mm x-offset was added to the demo's carry target (the carried pan sits 4.6 mm behind the commanded x because it pitches about the pinch); `jam` therefore was 15 mm off, now about 11 mm. The demo, `off_alt` and `off_alt2` were measured on the final files. Without the offset a -4 mm alternative jammed (0.0).
+Rows marked [pre-offset] and the `jam` row were measured before a 4 mm x-offset was added to the demo's carry target (the carried pan sits 4.6 mm behind the commanded x because it pitches about the pinch); `jam` therefore was 15 mm off, now about 11 mm. The demo, `off_alt` and `off_alt2` were measured on the final files. Without the offset a -4 mm alternative jammed (0.0).
