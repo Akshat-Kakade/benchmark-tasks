@@ -1,0 +1,20 @@
+{
+  "title": "Lower a loaded steel hotel pan level into a steam-table well and let go",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "level carry",
+    "seating",
+    "tight fit",
+    "loaded pan"
+  ],
+  "instruction": "Move the full steel pan from the table into the black steam-table well and let go, so it sits in the well with its flange resting on the counter.",
+  "context": "Cooks and kitchen staff (O*NET 35-2014.00, restaurant cooks, one of the largest kitchen occupations) set full hot pans into steam-table wells several times every service. A half-size pan holding about 3 kg of food spills scalding liquid if it is tilted, and jams on the well edge or drops if it is not aligned. Unlike the dock-a-laptop and tart-ring lowering tasks, the load is a heavy open vessel with a spill limit and a 6 mm-per-side fit.",
+  "setup": "Positions in cm from the midpoint between the two arm bases, on the table (x forward, y left, table top 74.75 cm). Steel pan: floor 32.5 x 26.5 cm, 40 mm deep, walls 2 mm, flange 1 cm wide and 3 mm thick (outside 34.5 x 28.5 cm), with an orange upright tab 2.4 x 2 x 4.5 cm on the flange at each short end (y +-16.75), friction 0.5, 3.0 kg including food (30 mm deep, fused to the pan, orange-brown), long axis along y, start centre x 8.5, y 0. Black steam-table counter: four fixed strips 4 cm high around a pit 27.7 (x) x 33.7 (y) cm, centre x 40, y 0; strips 3 cm wide at the x ends and 4.5 cm wide at the y sides.",
+  "scoring": "Scored on the end pose with a 1 s hold. 0 if at any step the pan tilts more than 8 degrees (spill), moves faster than 0.5 m/s (dropped), or ends off the table. 0.25 pan held over the well (centre within 20 mm, flange underside 12 mm or more above the counter). 0.5 pan underside below the counter top within 20 mm of the pit centre but the flange not seated. 0.75 all four flange corners within 2 mm of the counter top, centre within 8 mm, tilt at most 2 degrees. 1.0 as 0.75 with both grippers open and 40 mm clear of the handle tabs, pan and arms still, for 20 consecutive steps.",
+  "run_limit": "900 steps (45 seconds at 20 Hz)",
+  "reset_notes": "Pan with its food on the table, flange 5 mm from the counter front, long axis along y; counter fixed.",
+  "fidelity": "Pan is one rigid body: food fused in (no slosh); real pan about 0.7 kg plus 2.3 kg food, simulated 3.0 kg and the arms carry all of it. Spill is a tilt rule (over 8 degrees), not fluid. The well is four fixed boxes on the table (real wells are recessed, heated). Handles are two upright tabs. Gripper state is read by the scorer only.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-DXQ2AG"
+}
