@@ -1,0 +1,20 @@
+{
+  "title": "Turn a small steel drum on its side and roll it into an angled bay",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bimanual",
+    "rolling drum",
+    "skid turn",
+    "freight handling",
+    "bay parking"
+  ],
+  "instruction": "Get the steel drum into the angled bay between the two yellow rails, resting against the red back bar, and take your hands off it.",
+  "context": "Warehouse and stock workers (laborers and freight, stock and material movers, hand, O*NET 53-7062.00; stockers, 53-7065.00) regularly turn barrels, drums and kegs onto their sides and roll them into marked bays or rack positions at the end of an aisle. A drum that goes in crooked wedges against the bay posts and has to be handled again; one let go on a slope runs away. A rolling drum cannot be turned by pushing it straight: its two ends roll together, so the two ends must move in opposite senses at once, which takes both hands. This benchmark uses a small 4 L drum (1.2 kg; a real 200 L drum is about 20 kg). Unlike turn-parcel-into-bay (a flat box slid and turned in place between neighbours), the load here rolls, keeps rolling when let go, and has to be rolled in, not slid.",
+  "setup": "A table in front of two arms (bases 61 cm apart), seen by one overhead camera and a camera on each wrist. Distances are measured forward from the line between the arm bases and sideways from the midpoint between them (left positive). (1) A steel drum lying on its side, free to roll: 14 cm diameter shell 27 cm long with a 15 cm diameter, 1.5 cm wide chime ring on each end (30 cm overall, 1.2 kg in total, steel, friction 0.5; the rings are solid discs in the simulation), axis across the table, centre 23.1 cm forward and 1.8 cm right, resting on its two rings. (2) Two yellow rails (fixed, 13 x 2 x 5 cm) that run along a line pointing 35 degrees left of straight ahead, 18 cm either side of it, so their inner faces are 34 cm apart (20 mm clear of each drum end). (3) A red back bar (fixed, 2 x 34 x 5 cm) across the far end of the rails, its near face 7.6 cm past the bay centre. (4) A green strip (12 x 2 cm, 1 mm high) on the bay axis, visual only. The bay centre, where the drum's centre ends up, is 37.0 cm forward and 8.0 cm left. The drum is the only loose part. The layout is the same in every trial, as in the screenshot.",
+  "scoring": "In the simulator the drum's pose and spin are read from the simulation and the arms' finger bodies from their link poses. Zero for the rest of the trial if the drum's centre rises more than 8 mm for more than 10 steps, its axis tips more than 8 degrees from horizontal, it leaves the table region, or the end face of the drum enters a rail before the back bar has been touched. 0.25: the drum's centre has moved at least 6 cm from its start. 0.5: at least 12 cm and turned at least 15 degrees toward the bay (left). 0.75: the centre is inside the bay (between the rails and the bar) and its heading is within 15 degrees of 35 degrees. 1.0: its centre is within 2 cm of the bay centre, heading 35 +/- 8 degrees, the back bar touched, the drum has rolled in (its spin about its axis is at least 70 % of travel divided by radius, so sliding it in scores at most 0.75), both grippers open (finger-tip gap 58 mm or less) and at least 12 cm from the drum's ends, and the drum still (1.5 mm and 0.5 degrees over the last second), all for 20 consecutive steps (1 s). All tiers are judged on the final state.",
+  "run_limit": "1,000 steps (50 s at 20 Hz)",
+  "reset_notes": "Stand the drum on its side on the start mark, axis along the table's width. Nothing is consumed.",
+  "fidelity": "Rigid-body PhysX, 20 Hz. Small 4 L drum (14 x 30 cm, 1.2 kg) instead of a 200 L drum (57 x 88 cm, ~20 kg) so both ends are in reach; empty. Chime rings are solid discs, total mass fixed at 1.2 kg, so inertia is that of a light solid cylinder. PhysX rolls a cylinder with no resistance: a rolling resistance c_rr 0.01 (steel on concrete) is added in code to the drum only. Table stands in for the floor. Closed grippers push the rims.",
+  "scores": "Dream-1 run: 0.0; demo: 1.0",
+  "media": "M-AN476Q"
+}
