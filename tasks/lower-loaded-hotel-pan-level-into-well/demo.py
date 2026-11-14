@@ -5,7 +5,7 @@
 OPEN LOOP: the waypoints come from the fixed layout in task.py (pan start, handle height, well position). The only feedback is
 each arm's own joint positions (the measured TCP error is integrated into the command), never the pan or well pose.
 Each arm pinches a handle tab (fingers open along x so the jaws resist pitch), both lift the pan 60 mm, carry it 0.315 m to the well, lower it, release and withdraw.
-DEMO_VARIANT: settle, one_arm, tilt, jam, drop, no_release, stop_above, off_alt, off_alt2, slow.
+DEMO_VARIANT: settle, spill, spill2, one_arm, tilt, jam, drop, no_release, stop_above, off_alt, off_alt2, slow.
 """
 from __future__ import annotations
 
@@ -173,8 +173,12 @@ def script(task, ctx):
     Rr.feedback(True)
     yield from par(L.move(ypos(1, x0, z_carry), gl, 2.5), Rr.move(ypos(-1, x0, z_carry), gr, 2.5))
     yield from wait(0.5)
+    if variant == "spill":                       # one side raised 45 mm in the air (7.6 deg about x), then straight on as normal
+        yield from L.move(L.pos + [0, 0, 0.045], gl, 1.5)
+        yield from L.move(L.pos - [0, 0, 0.045], gl, 1.5)
     # carry over the well (one smooth move per arm, same timing)
-    yield from par(L.move(ypos(1, xw + x_bias + off[0], z_carry) + [0, off[1], 0], gl, 6.0),
+    dzc = 0.02 if variant == "spill2" else 0.0   # spill2: left side 20 mm high during the carry (3.5 deg roll, alone harmless; with the carry's 4-5 deg pitch the low corner overflows)
+    yield from par(L.move(ypos(1, xw + x_bias + off[0], z_carry + dzc) + [0, off[1], 0], gl, 6.0),
                    Rr.move(ypos(-1, xw + x_bias + off[0], z_carry) + [0, off[1], 0], gr, 6.0))
     yield from wait(2.0)
     if variant == "stop_above":

@@ -1,8 +1,8 @@
-"""On the station table: a stainless half-size hotel pan (325 x 265 mm, 40 mm deep, 10 mm flange, loaded with food: 3.0 kg
+"""On the station table: a stainless half-size hotel pan (325 x 265 mm, 40 mm deep, 10 mm flange, filled with 20 mm of cold water: 2.4 kg
 simulated as one fused body) with an upright orange handle tab on the flange at each short end. Beside it a black steam-table
 counter (40 mm high) has a pit sized for the pan body (6 mm clearance on each side). Both arms must carry the pan by its two
-handles and lower it level into the pit so its flange rests on the counter all round, then let go. A pan tilted more than 8
-degrees (a spill of hot food), dropped (hits the counter or pit at over 0.5 m/s) or pushed off the table scores 0.
+handles and lower it level into the pit so its flange rests on the counter all round, then let go. A pan scores 0 if it tilts
+so that water would overflow at its lowest rim corner (a spill), if it is dropped (hits the counter or pit at over 0.5 m/s) or if it is pushed off the table.
 
 Run it:  inspect-robots run --embodiment yam_arena -E task=task.py --scorer task_score ...
 Demo:    python demo.py task.py demo_out
@@ -30,7 +30,7 @@ INSTRUCTION = ("Move the full steel pan from the table into the black steam-tabl
                "with its flange resting on the counter.")
 
 STEEL = (0.72, 0.72, 0.75)
-FOOD = (0.80, 0.45, 0.12)
+FOOD = (0.25, 0.50, 0.85)                       # water (drawn as a fused blue box)
 ORANGE = (0.95, 0.50, 0.08)
 BLACK = (0.08, 0.08, 0.09)
 
@@ -39,7 +39,7 @@ PAN_X, PAN_Y, PAN_H = 0.265, 0.325, 0.040      # body size (GN 1/2: 325 x 265 mm
 WALL, FLOOR = 0.002, 0.003
 FL_W, FL_T = 0.010, 0.003                       # rim flange: 10 mm wide, 3 mm thick (outside 285 x 345... see below)
 FL_X, FL_Y = PAN_X + 2 * FL_W, PAN_Y + 2 * FL_W  # outside of the flange: 285 x 345 mm
-FOOD_H = 0.030                                  # food fills the pan 30 mm deep
+FOOD_H = 0.020                                  # cold tap water 20 mm deep (1.68 kg over the 0.261 x 0.321 m inside)
 HANDLE_Y = PAN_Y / 2 + FL_W / 2                 # handle tabs stand on the short flange: y = +-0.1675
 TAB = (0.024, 0.020, 0.045)                     # upright handle tab on each short flange (x, y, z): 24 mm wide, 20 mm thick, 45 mm tall
 BAR_Z = PAN_H + 0.025                           # pinch height above the pan underside (tab mid-height 0.0625; pinch 0.065)
@@ -56,7 +56,7 @@ PAN_BOXES = [
     ((-(PAN_X + FL_W) / 2, 0.0, PAN_H - FL_T / 2), (FL_W, FL_Y, FL_T), STEEL),
     ((0.0, +(PAN_Y + FL_W) / 2, PAN_H - FL_T / 2), (PAN_X, FL_W, FL_T), STEEL),
     ((0.0, -(PAN_Y + FL_W) / 2, PAN_H - FL_T / 2), (PAN_X, FL_W, FL_T), STEEL),
-    # food (fused with the pan body: no slosh)
+    # water (fused with the pan body: no slosh, no fluid)
     ((0.0, 0.0, FLOOR + FOOD_H / 2), (PAN_X - 2 * WALL, PAN_Y - 2 * WALL, FOOD_H), FOOD),
 ]
 for _s in (1, -1):
@@ -72,7 +72,7 @@ START_Z = TOP + 0.0005
 SEAT_Z = TOP + COUNTER_H - (PAN_H - FL_T)       # pan origin height when the flange underside rests on the counter: TOP + 0.003
 LEDGE_Z = TOP + COUNTER_H                       # counter top
 
-PAN = part("pan", pos=(PAN_X0, 0.0, START_Z), mass=3.0, boxes=PAN_BOXES, color=STEEL, friction=0.5)
+PAN = part("pan", pos=(PAN_X0, 0.0, START_Z), mass=2.4, boxes=PAN_BOXES, color=STEEL, friction=0.5)
 _ox, _oy = OPEN_X / 2, OPEN_Y / 2
 COUNTER = [
     Box("well_front", pos=(WELL_X - _ox - WALL_X / 2, 0.0, TOP + COUNTER_H / 2), size=(WALL_X, OPEN_Y + 2 * WALL_Y, COUNTER_H), color=BLACK),
@@ -83,7 +83,21 @@ COUNTER = [
 OBJECTS = [*COUNTER, PAN]
 
 # -- scoring thresholds ------------------------------------------------------------------------------------------------
-GATE_TILT = 8.0               # pan tilted over 8 deg at any step: hot food spills
+# Spill = geometric overflow at the LOWEST RIM CORNER. The free surface stays horizontal; water leaves the pan when a rim corner drops
+# below it. With n the pan's up-normal, the corner at (+-0.1325, +-0.1625) m from the centre drops
+#   drop = 0.1325 * |n_x / n_z| + 0.1625 * |n_y / n_z|    (m)
+# and the water overflows when drop > FREEBOARD = 17 mm (40 mm wall - 3 mm floor - 20 mm water). Alone, tilt across x (about y)
+# spills at 7.3 deg and tilt along y (about x) at 6.0 deg; a combination spills earlier (5 deg + 4 deg drops the corner 23 mm).
+# Real-world equivalent: carry the pan over a weighed absorbent mat or catch tray; the spill allowed is at most 5 mL.
+FREEBOARD = PAN_H - FLOOR - FOOD_H
+SPILL_TAN_X = FREEBOARD / (PAN_X / 2)                  # single-axis limits, for tests and the README
+SPILL_TAN_Y = FREEBOARD / (PAN_Y / 2)
+
+
+def corner_drop(state) -> float:
+    """How far (m) the lowest rim corner of the pan has dropped below the horizontal water surface (0 when level)."""
+    n = state.rotation()[:, 2]
+    return float((PAN_X / 2) * abs(n[0] / n[2]) + (PAN_Y / 2) * abs(n[1] / n[2]))
 GATE_SPEED = 0.5              # m/s: dropped onto the counter / pit
 FALL_Z = TOP - 0.02
 LIFT_CLEAR = 0.012            # flange underside this far above the counter top: "lifted over the well" (0.25)
@@ -101,7 +115,7 @@ _ENV: dict = {"env": None}
 
 
 def _fresh() -> dict:
-    return dict(step=0, scored=None, last=(0.0, False), max_tilt=0.0, max_speed=0.0, gate=False, held=0)
+    return dict(step=0, scored=None, last=(0.0, False), max_tilt=0.0, max_drop=0.0, max_speed=0.0, gate=False, held=0)
 
 
 @on_reset
@@ -194,10 +208,11 @@ def classify(pan: PartState, memo: dict, grip=None):
     speed = float(np.linalg.norm(pan.lin_vel))
     if memo["step"] > 3:
         memo["max_tilt"] = max(memo["max_tilt"], m["tilt"])
+        memo["max_drop"] = max(memo["max_drop"], corner_drop(pan))
         memo["max_speed"] = max(memo["max_speed"], speed)
-    if memo["max_tilt"] > GATE_TILT or memo["max_speed"] > GATE_SPEED or m["z"] < FALL_Z:
+    if memo["max_drop"] > FREEBOARD or memo["max_speed"] > GATE_SPEED or m["z"] < FALL_Z:
         memo["gate"] = True
-    m.update(max_tilt=memo["max_tilt"], max_speed=memo["max_speed"], gate=memo["gate"])
+    m.update(max_tilt=memo["max_tilt"], max_drop=memo["max_drop"], max_speed=memo["max_speed"], gate=memo["gate"])
     if memo["gate"]:
         return 0.0, False, m
     near = abs(m["dx"]) <= L1_OFF and abs(m["dy"]) <= L1_OFF
@@ -243,13 +258,13 @@ def _update(objects) -> tuple[float, bool]:
 
 def success(objects) -> bool:
     """The pan's four flange corners rest on the counter (each within 2 mm of its top), pan centred within 8 mm of the pit
-    centre and tilted at most 2 degrees, it never tilted over 8 degrees or moved faster than 0.5 m/s, both grippers open and
+    centre and tilted at most 2 degrees, it never spilled (lowest rim corner dropped more than 17 mm, the water freeboard) or moved faster than 0.5 m/s, both grippers open and
     40 mm clear of the handles, pan and arms still: true after 1 s (20 steps) of all of this."""
     return _update(objects)[1]
 
 
 def score(objects) -> float:
-    """0 if the pan ever tilts over 8 degrees (hot food spills), ever moves faster than 0.5 m/s (dropped on the counter) or
+    """0 if the lowest rim corner ever drops more than 17 mm below the water level (single-axis limits 7.3 deg across x, 6.0 deg along y; combined tilts spill earlier), ever moves faster than 0.5 m/s (dropped on the counter) or
     ends off the table. Otherwise from the END pose: 0.25 held over the well (centre within 20 mm, flange underside >= 12 mm
     above the counter); 0.5 pan underside below the counter top (body in the pit) but the flange not seated (a corner more
     than 2 mm proud, or tilt over 2 degrees); 0.75 flange seated on the counter all round, still held or moving; 1.0 as in

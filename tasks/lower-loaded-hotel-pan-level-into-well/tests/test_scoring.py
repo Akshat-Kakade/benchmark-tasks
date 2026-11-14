@@ -106,7 +106,7 @@ def test_025_over_well():
 
 def test_gates():
     m = memo()
-    assert T.classify(pan(tilt=9), m, grips(pan()))[0] == 0.0          # tilt
+    assert T.classify(pan(tilt=9), m, grips(pan()))[0] == 0.0          # spill
     assert m["gate"]
     assert T.classify(pan(), m, grips(pan()))[0] == 0.0                # latched: seated afterwards still 0
     m = memo()
@@ -114,10 +114,42 @@ def test_gates():
     assert lv(pan(z=T.TOP - 0.05)) == 0.0                              # off the table
 
 
-def test_tilt_8_boundary_and_pitch_axis():
+def rot(rx=0.0, ry=0.0):
+    """PartState tilted by rx deg about x (roll, along y) then ry deg about y (pitch, across x)."""
+    a, b = math.radians(rx) / 2, math.radians(ry) / 2
+    qx = np.array([math.sin(a), 0, 0, math.cos(a)])
+    qy = np.array([0, math.sin(b), 0, math.cos(b)])
+    x1, y1, z1, w1 = qy
+    x2, y2, z2, w2 = qx
+    q = np.array([w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2, w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
+                  w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2, w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2])
+    z0 = np.zeros(3)
+    return PartState(pos=np.array([T.WELL_X, 0.0, T.SEAT_Z + 0.03]), quat_xyzw=q, lin_vel=z0, ang_vel=z0, low=z0, high=z0)
+
+
+def test_spill_gate_corner_single_axis_limits_unchanged():
+    ex = math.degrees(math.atan(T.SPILL_TAN_X))      # across x (about y), ~7.3 deg
+    ey = math.degrees(math.atan(T.SPILL_TAN_Y))      # along y (about x), ~6.0 deg
+    assert 7.2 < ex < 7.4 and 5.9 < ey < 6.1
+    assert lv(rot(ry=ex - 0.3)) != 0.0 and lv(rot(ry=ex + 0.3)) == 0.0
+    assert lv(rot(rx=ey - 0.3)) != 0.0 and lv(rot(rx=ey + 0.3)) == 0.0
+    assert lv(rot(ry=-(ex + 0.3))) == 0.0 and lv(rot(rx=-(ey + 0.3))) == 0.0     # either sign
+
+
+def test_spill_gate_combined_tilt():
+    # 5 deg across + 4 deg along: each alone is below its limit, but the low corner drops ~23 mm > 17 mm
+    assert T.corner_drop(rot(rx=4.0, ry=5.0)) > 0.020
+    assert lv(rot(rx=4.0, ry=5.0)) == 0.0
+    assert lv(rot(rx=4.0)) != 0.0 and lv(rot(ry=5.0)) != 0.0
+    assert lv(rot(rx=0.35, ry=4.65)) != 0.0                   # the demo's measured peaks (corner drop ~11.8 mm) pass
+    assert abs(T.corner_drop(rot(rx=0.35, ry=4.65)) - 0.0118) < 0.001
+
+
+def test_spill_latched():
     m = memo()
-    assert T.classify(pan(tilt=8.5, axis="y"), m, grips(pan()))[0] == 0.0
-    assert lv(pan(tilt=7.5, z=T.SEAT_Z + 0.03)) != 0.0
+    T.classify(pan(tilt=7.0, axis="x"), m, grips(pan()))
+    assert m["gate"]
+    assert T.classify(pan(), m, grips(pan()))[0] == 0.0
 
 
 def test_hold_counter():
@@ -163,3 +195,10 @@ def test_demo_reads_no_simulator_state():
     src = (pathlib.Path(__file__).resolve().parents[1] / "demo.py").read_text()
     for bad in ("states(", "object_states", "_env", "body_pos", "root_pos"):
         assert bad not in src, bad
+
+
+def test_spill_latched_combined():
+    m = memo()
+    T.classify(rot(rx=4.0, ry=5.0), m, grips(pan()))
+    assert m["gate"]
+    assert T.classify(pan(), m, grips(pan()))[0] == 0.0
