@@ -1,0 +1,311 @@
+#usda 1.0
+(
+    defaultPrim = "pickle_jar"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "pickle_jar"
+{
+    def Xform "jar" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
+    )
+    {
+        float physics:mass = 0.65
+        custom bool physxArticulation:enabledSelfCollisions = 0
+        custom float physxArticulation:sleepThreshold = 0
+        custom float physxArticulation:stabilizationThreshold = 0
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cylinder "body" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "MaterialBindingAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.105
+            rel material:binding = </pickle_jar/Looks/glass>
+            rel material:binding:physics = </pickle_jar/Physics/glass> (
+                bindMaterialAs = "weakerThanDescendants"
+            )
+            custom float physxCollision:minTorsionalPatchRadius = 0.016
+            custom float physxCollision:torsionalPatchRadius = 0.02
+            color3f[] primvars:displayColor = [(0.1, 0.5, 0.22)]
+            double radius = 0.039
+            double3 xformOp:translate = (0, 0, 0.0525)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cylinder "neck" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "MaterialBindingAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.017
+            rel material:binding = </pickle_jar/Looks/glass>
+            rel material:binding:physics = </pickle_jar/Physics/glass> (
+                bindMaterialAs = "weakerThanDescendants"
+            )
+            color3f[] primvars:displayColor = [(0.1, 0.5, 0.22)]
+            double radius = 0.0325
+            double3 xformOp:translate = (0, 0, 0.11349999999999999)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cylinder "pickles" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.09
+            rel material:binding = </pickle_jar/Looks/pickles>
+            color3f[] primvars:displayColor = [(0.36, 0.45, 0.14)]
+            double radius = 0.036
+            double3 xformOp:translate = (0, 0, 0.049999999999999996)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def "Looks"
+    {
+        def Material "glass"
+        {
+            token outputs:surface.connect = </pickle_jar/Looks/glass/surface.outputs:surface>
+
+            def Shader "surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.1, 0.5, 0.22)
+                float inputs:opacity = 0.85
+                float inputs:roughness = 0.15
+                token outputs:surface
+            }
+        }
+
+        def Material "pickles"
+        {
+            token outputs:surface.connect = </pickle_jar/Looks/pickles/surface.outputs:surface>
+
+            def Shader "surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.36, 0.45, 0.14)
+                float inputs:opacity = 1
+                float inputs:roughness = 0.7
+                token outputs:surface
+            }
+        }
+
+        def Material "gold"
+        {
+            token outputs:surface.connect = </pickle_jar/Looks/gold/surface.outputs:surface>
+
+            def Shader "surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.85, 0.7, 0.2)
+                float inputs:opacity = 1
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+
+        def Material "dark"
+        {
+            token outputs:surface.connect = </pickle_jar/Looks/dark/surface.outputs:surface>
+
+            def Shader "surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.3, 0.22, 0.05)
+                float inputs:opacity = 1
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
+        }
+    }
+
+    def "Physics"
+    {
+        def Material "glass" (
+            prepend apiSchemas = ["PhysicsMaterialAPI"]
+        )
+        {
+            float physics:dynamicFriction = 0.4
+            float physics:restitution = 0
+            float physics:staticFriction = 0.45
+        }
+
+        def Material "lid" (
+            prepend apiSchemas = ["PhysicsMaterialAPI"]
+        )
+        {
+            float physics:dynamicFriction = 0.8
+            float physics:restitution = 0
+            float physics:staticFriction = 0.9
+        }
+    }
+
+    def Xform "lid_x" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (0.000001, 0.000001, 0.000001)
+        float physics:mass = 0.004
+        double3 xformOp:translate = (0, 0, 0.1255)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "lid_y" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (0.000001, 0.000001, 0.000001)
+        float physics:mass = 0.004
+        double3 xformOp:translate = (0, 0, 0.1255)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "lid_z" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (0.000001, 0.000001, 0.000001)
+        float physics:mass = 0.004
+        double3 xformOp:translate = (0, 0, 0.1255)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "lid" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        float physics:mass = 0.03
+        double3 xformOp:translate = (0, 0, 0.1255)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cylinder "shell" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "MaterialBindingAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.021
+            rel material:binding = </pickle_jar/Looks/gold>
+            rel material:binding:physics = </pickle_jar/Physics/lid> (
+                bindMaterialAs = "weakerThanDescendants"
+            )
+            custom float physxCollision:minTorsionalPatchRadius = 0.012
+            custom float physxCollision:torsionalPatchRadius = 0.015
+            color3f[] primvars:displayColor = [(0.85, 0.7, 0.2)]
+            double radius = 0.035
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "mark_a" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </pickle_jar/Looks/dark>
+            color3f[] primvars:displayColor = [(0.3, 0.22, 0.05)]
+            double size = 1
+            float3 xformOp:scale = (0.06, 0.007, 0.0008)
+            double3 xformOp:translate = (0, 0, 0.0109)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "mark_b" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </pickle_jar/Looks/dark>
+            color3f[] primvars:displayColor = [(0.3, 0.22, 0.05)]
+            double size = 1
+            float3 xformOp:scale = (0.007, 0.06, 0.0008)
+            double3 xformOp:translate = (0, 0, 0.0109)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+
+    def "joints"
+    {
+        def PhysicsPrismaticJoint "lid_x" (
+            prepend apiSchemas = ["PhysicsDriveAPI:linear"]
+        )
+        {
+            float drive:linear:physics:damping = 0.5
+            float drive:linear:physics:stiffness = 0
+            float drive:linear:physics:targetPosition = 0
+            uniform token drive:linear:physics:type = "force"
+            uniform token physics:axis = "X"
+            rel physics:body0 = </pickle_jar/jar>
+            rel physics:body1 = </pickle_jar/lid_x>
+            point3f physics:localPos0 = (0, 0, 0.1255)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = 0
+            float physics:upperLimit = 0
+        }
+
+        def PhysicsPrismaticJoint "lid_y" (
+            prepend apiSchemas = ["PhysicsDriveAPI:linear"]
+        )
+        {
+            float drive:linear:physics:damping = 0.5
+            float drive:linear:physics:stiffness = 0
+            float drive:linear:physics:targetPosition = 0
+            uniform token drive:linear:physics:type = "force"
+            uniform token physics:axis = "Y"
+            rel physics:body0 = </pickle_jar/lid_x>
+            rel physics:body1 = </pickle_jar/lid_y>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = 0
+            float physics:upperLimit = 0
+        }
+
+        def PhysicsPrismaticJoint "lid_z" (
+            prepend apiSchemas = ["PhysicsDriveAPI:linear"]
+        )
+        {
+            float drive:linear:physics:damping = 0.5
+            float drive:linear:physics:stiffness = 0
+            float drive:linear:physics:targetPosition = 0
+            uniform token drive:linear:physics:type = "force"
+            uniform token physics:axis = "Z"
+            rel physics:body0 = </pickle_jar/lid_y>
+            rel physics:body1 = </pickle_jar/lid_z>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = 0
+            float physics:upperLimit = 0
+        }
+
+        def PhysicsRevoluteJoint "lid_spin" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 100
+            float drive:angular:physics:maxForce = 0.4
+            float drive:angular:physics:stiffness = 0
+            float drive:angular:physics:targetPosition = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Z"
+            rel physics:body0 = </pickle_jar/lid_z>
+            rel physics:body1 = </pickle_jar/lid>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+    }
+}
+
