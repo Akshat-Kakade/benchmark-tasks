@@ -8,7 +8,7 @@ pose. The left arm grips the jar body from the side and holds it. The right arm 
 under the lid edge on the near side and levers it up (the seal breaks), puts the tool down, pinches the lid from above and
 turns the wrist about 100 degrees (the lid unlatches against the jar held by the left arm), lifts the lid off, sets it on the table
 and lets go; the left arm lets go last.
-DEMO_VARIANT: settle, hover, right_only, right_only_slow, left_only, no_tool, pop_only, lid_not_released.
+DEMO_VARIANT: settle, hover, tighten, right_only, left_only, no_tool, pop_only, lid_not_released.
 """
 from __future__ import annotations
 
@@ -209,7 +209,8 @@ def script(task, ctx):
         yield from Rr.move(tool_at + [0, 0, 0.10], r_fin, 1.0)
 
     def twist():
-        r0 = _grip(-TWIST)
+        sgn = -1.0 if variant == "tighten" else 1.0      # the wrist turns anticlockwise (loosening); "tighten" turns it the wrong way
+        r0 = _grip(-sgn * TWIST)
         yield from Rr.move(pinch + [0, 0, 0.07], r0, 2.5, grip=1.0)
         yield from Rr.move(pinch, r0, 1.2)
         Rr.feedback(False, keep=True)
@@ -217,7 +218,7 @@ def script(task, ctx):
         yield from wait(0.4)
         n = 12
         for k in range(1, n + 1):
-            yield from Rr.move(pinch, _grip(-TWIST + 2 * TWIST * k / n), 0.9 if variant == "right_only_slow" else 0.25)
+            yield from Rr.move(pinch, _grip(sgn * (-TWIST + 2 * TWIST * k / n)), 0.9 if variant == "right_only_slow" else 0.25)
         yield from wait(0.5)
 
     def lift_and_set_down(release=True):
@@ -253,6 +254,9 @@ def script(task, ctx):
             yield from wait(4.0)
             return
     yield from twist()
+    if variant == "tighten":
+        yield from wait(3.0)
+        return
     yield from lift_and_set_down(release=variant != "lid_not_released")
     if variant == "lid_not_released":
         return

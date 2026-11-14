@@ -133,6 +133,12 @@ def prise(jar, tool, lid_up=0.0) -> dict:
     return dict(ok=ok, r=r, z=z, raised=raised, up=lid_up, aim=math.degrees(aim))
 
 
+def loosened(spin: float) -> bool:
+    """Unlatch test: the lid has turned the loosening way (counter-clockwise seen from above, positive spin) by the lug quarter turn.
+    A tightening turn, of any size, never unlatches."""
+    return g.LOOSEN_SIGN * spin >= g.UNLATCH
+
+
 def tilt_rad(jar) -> float:
     return math.acos(max(-1.0, min(1.0, float(jar.rotation()[2, 2]))))
 
@@ -203,8 +209,8 @@ def _monitor(environment) -> None:
         S["prise"] = p
         if S["pop_run"] >= g.POP_STEPS:
             S["popped"] = True                                   # the seal is broken: the lid turns against its friction
-            _write(environment, "lid_spin", limits=(-g.SPIN_LIMIT, g.SPIN_LIMIT), effort=g.SEAL_TORQUE)
-    elif not S["unlatched"] and abs(S["spin"]) >= g.UNLATCH:
+            _write(environment, "lid_spin", limits=(-g.TIGHT_STOP, g.SPIN_LIMIT), effort=g.SEAL_TORQUE)
+    elif not S["unlatched"] and loosened(S["spin"]):
         S["unlatched"] = True                                    # the lugs clear the thread: a loose lid
         _write(environment, "lid_spin", limits=(-60.0, 60.0), effort=0.002)
         for n in ("lid_x", "lid_y"):
@@ -233,7 +239,7 @@ def _monitor(environment) -> None:
 
 
 def success(objects) -> bool:
-    """The seal was broken with the lifter and the lid unlatched (turned 80 degrees relative to the jar); the lid now lies still on the table
+    """The seal was broken with the lifter and the lid unlatched (turned 80 degrees relative to the jar in the loosening direction, counter-clockwise seen from above; tightening never unlatches); the lid now lies still on the table
     at least 30 mm from the jar's footprint; the jar stands upright (tilt <= 10 degrees), within 60 mm of its start and still; both
     grippers are open and at least 70 mm from the jar axis and from the lid centre. True after 1 s (20 steps) of all of this. The
     jar never tilted past 30 degrees after the lid came free (brine at the rim) and never left the table."""
@@ -243,6 +249,6 @@ def success(objects) -> bool:
 def score(objects) -> float:
     """0 if the jar ever tilts past 30 degrees once the lid is unlatched, or leaves the table. Otherwise from the end state:
     0.25 seal broken (the lifter's blade tip under the lid edge, raising it 1 mm, for 5 steps; latched); 0.5 lid unlatched
-    (turned 80 degrees relative to the jar) and still on the jar (latched); 0.75 lid off the jar (centre 50 mm from the axis) but held,
+    (turned 80 degrees relative to the jar counter-clockwise seen from above, the loosening way) and still on the jar (latched); 0.75 lid off the jar (centre 50 mm from the axis) but held,
     in the air or not at rest; 1.0 as in success() (1 s hold)."""
     return float(_STATE["level"])

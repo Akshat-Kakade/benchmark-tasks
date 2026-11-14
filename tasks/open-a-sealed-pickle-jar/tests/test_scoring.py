@@ -121,6 +121,22 @@ def test_two_valid_solutions_both_full():
             assert lv(jar(), lid_on_table(side=side), memo(popped=True, unlatched=True), gr=gr)[0] == 1.0
 
 
+def test_unlatch_direction():
+    assert T.loosened(math.radians(80)) and T.loosened(math.radians(95))
+    assert not T.loosened(math.radians(79))
+    assert not T.loosened(-math.radians(80)) and not T.loosened(-math.radians(170))     # tightening never unlatches
+    spins = [0, 60, -50, -90, 20, 79, 30, 80]                                        # mixed back and forth: only the last reaches 80 the loosening way
+    seen = [T.loosened(math.radians(x)) for x in spins]
+    assert seen == [False] * 7 + [True]
+
+
+def test_tightening_earns_at_most_pop():
+    # a tightening turn leaves 'unlatched' False, so the best level is the pop alone
+    m = memo(popped=True)
+    assert not T.loosened(-math.radians(120))
+    assert lv(jar(), lid_on_jar(), m)[0] == 0.25
+
+
 def test_hold_is_20_steps():
     assert T.g.HOLD_STEPS == 20
 

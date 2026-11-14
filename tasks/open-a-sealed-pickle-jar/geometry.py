@@ -32,7 +32,9 @@ LID_MU = (0.9, 0.8)
 
 # -- the seal and the lug thread (task logic) -------------------------------------------------------------------------------
 SEAL_TORQUE = 0.4                         # N m the lid resists once the seal is broken (thread friction + liner), as Coulomb friction
-UNLATCH = math.radians(80)                # lug quarter turn: free after this much turn relative to the jar (either way)
+UNLATCH = math.radians(80)                # lug quarter turn in the LOOSENING direction: free after this much turn relative to the jar
+LOOSEN_SIGN = 1.0                         # loosening = counter-clockwise seen from above (right-hand thread) = positive turn about the lid axis (+z up)
+TIGHT_STOP = math.radians(1.1)            # the seated lid is given this stop in the tightening direction (a soft stop: the scorer, not the stop, is what makes tightening worthless)
 SPIN_LIMIT = math.radians(95)             # before the unlatch the lid cannot turn further than this
 RIM_R = (0.028, 0.038)                    # blade tip radial distance from the jar axis: at the 35 mm lid skirt (3 mm tolerance for the pose of a 2 mm blade), outside the 32.5 mm neck
 RIM_Z = (BODY_H - 0.005, LID_Z0 + 0.002)  # tip underside height: on the shoulder ledge or up to the lid's (raised) bottom edge + 2 mm
