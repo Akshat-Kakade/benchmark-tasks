@@ -5,7 +5,7 @@
 Open loop in the fixed layout (task constants); the only feedback is each arm's own joint positions (proprioception: the
 measured TCP is integrated into the command), never an object pose. The right arm takes the push stick by its grip fin
 and pushes the board from behind with the forked heel; the left arm presses the board's outer edge toward the fence for
-the first 60 mm (the entry), then lifts away. DEMO_VARIANT: settle, probe, one_right, one_left, bare_hand, early_lift, no_release.
+the first 60 mm (the entry), then lifts away. DEMO_VARIANT: settle, probe, one_right, one_left, bare_hand, early_lift, lift_over, no_release.
 """
 
 from __future__ import annotations
@@ -119,7 +119,9 @@ def _rz(a):
 
 
 
-import task as T  # noqa: E402  (constants only; the simulator module is the one loaded by the embodiment)
+os.environ["SAW_NO_HOOKS"] = "1"        # constants only: this copy of task.py must not register simulator hooks
+import task as T  # noqa: E402
+os.environ.pop("SAW_NO_HOOKS")
 
 SPEED_ENTRY, SPEED = 0.020, 0.035      # push speeds (m/s): the first 60 mm (the board enters the blade) is slower
 HAND_BEHIND = -T.FIN_Y                 # fin is this far behind the heel's front face
@@ -127,11 +129,13 @@ CARRY_DZ = 0.007                       # lift of the stick (heel bottom 7 mm abo
 FIN_Z = T.SAW_TOP + 0.0005 + T.OZ + T.BAR_Z1 + T.FIN[2] / 2 - T.HEEL_Z0 - T.OZ   # fin centre height on the station table
 REST_FACE_Y = T.STICK_START[1]
 READY_FACE_Y = T.BOARD_REAR0 - 0.030   # heel front face just behind the board's rear end
-END_FACE_Y = T.CUT_DONE + 0.006
+END_FACE_Y = T.CUT_DONE + 0.012
 LEFT_X_PRESS = float(os.environ.get("LEFT_X", "0.204"))       # hold-down pad over the board, straddling the kerf, next to the fence
+XS = T.BLADE_X + float(os.environ.get("STICK_DX", "0.0"))   # the stick line, shifted toward the fence
+LEFT_X_RIDE = float(os.environ.get("LEFT_X_RIDE", "0.204"))   # the pad slides the board to the fence, then rides at this x
 LEFT_Y0 = T.BOARD_REAR0 + 0.015
 LEFT_Y1 = LEFT_Y0 + (T.LOAD_END_REAR - T.BOARD_REAR0)         # the hand rides with the rear end until the loads end
-LEFT_Z = T.TOP + 0.030 + 0.019 + 0.013 - float(os.environ.get("PRESS_MM", "30")) / 1000   # pad bottom (13 mm below TCP) this far below the board top
+LEFT_Z = T.TOP + 0.030 + 0.019 + 0.013 - float(os.environ.get("PRESS_MM", "10")) / 1000   # pad bottom (13 mm below TCP) this far below the board top
 
 
 def wait(seconds: float):
@@ -204,8 +208,8 @@ def script(task, ctx):
     gr, gl = grip_rotation(yaw_r), grip_rotation(yaw_l)
     print("YAW", yaw_r, yaw_l, flush=True)
     if variant == "probe":          # IK / reach check along the whole path, no contact
-        pts_r = [fin_rest, fin_rest + [0, 0, CARRY_DZ], np.array([T.BLADE_X, READY_FACE_Y + T.FIN_Y, FIN_Z + CARRY_DZ]),
-                 np.array([T.BLADE_X, END_FACE_Y + T.FIN_Y, FIN_Z + CARRY_DZ])]
+        pts_r = [fin_rest, fin_rest + [0, 0, CARRY_DZ], np.array([XS, READY_FACE_Y + T.FIN_Y, FIN_Z + CARRY_DZ]),
+                 np.array([XS, END_FACE_Y + T.FIN_Y, FIN_Z + CARRY_DZ])]
         for p in pts_r:
             yield from Rr.move(p, gr, 1.5, grip=1.0)
             print("PROBE R", np.round(p, 3).tolist(), "worst_mm", round(Rr.worst_mm, 1), flush=True)
@@ -224,7 +228,7 @@ def script(task, ctx):
         Rr.gain, Rr.cap = 0.06, 0.02
         Rr.feedback(True)
         yield from Rr.move(fin_rest + [0, 0, CARRY_DZ], gr, 1.2)
-        ready = np.array([T.BLADE_X, READY_FACE_Y + T.FIN_Y, FIN_Z + CARRY_DZ])
+        ready = np.array([XS, READY_FACE_Y + T.FIN_Y, FIN_Z + CARRY_DZ])
         stage = ready - [0, 0.06, 0]
         yield from Rr.move(stage, gr, 3.0)
         yield from wait(1.0)
@@ -269,6 +273,9 @@ def script(task, ctx):
         L.feedback(False)
         yield from L.move(np.array([LEFT_X_PRESS, LEFT_Y0, LEFT_Z]), gl, 2.0)
         yield from wait(0.5)
+        if LEFT_X_RIDE != LEFT_X_PRESS:            # hold the board to the fence: the pad drags it toward the fence
+            yield from L.move(np.array([LEFT_X_RIDE, LEFT_Y0, LEFT_Z]), gl, 1.5)
+            yield from wait(0.5)
     face = READY_FACE_Y
     lift_at = LEFT_Y1 if variant != "early_lift" else LEFT_Y0 + 0.01
     left_gen = None
@@ -276,19 +283,19 @@ def script(task, ctx):
 
     def left_away():
         L.feedback(False)
-        yield from L.move(np.array([LEFT_X_PRESS, L.pos[1], T.SAW_TOP + 0.22]), gl, 2.0, grip=1.0)      # straight up above 150 mm before going home
+        yield from L.move(np.array([LEFT_X_RIDE, L.pos[1], T.SAW_TOP + 0.22]), gl, 2.0, grip=1.0)      # straight up above 150 mm before going home
         yield from home(L, 3.0)
 
     def right_away():
         yield from wait(1.5)
         yield from Rr.set_grip(1.0, 1.0)
         yield from Rr.move(Rr.pos + [0, 0, 0.04], gr, 1.0)
-        yield from Rr.move(np.array([T.BLADE_X, Rr.pos[1] - 0.12, Rr.pos[2] + 0.04]), gr, 2.0)
+        yield from Rr.move(np.array([XS, Rr.pos[1] - 0.12, Rr.pos[2] + 0.04]), gr, 2.0)
 
     k = 0
     while face < END_FACE_Y:
         face += (SPEED_ENTRY if face - READY_FACE_Y < 0.060 else SPEED) / CONTROL_HZ
-        Rr.aim(np.array([T.BLADE_X, face + T.FIN_Y, FIN_Z + CARRY_DZ]), gr)
+        Rr.aim(np.array([XS, face + T.FIN_Y, FIN_Z + CARRY_DZ]), gr)
         if left_gen is not None:
             try:
                 next(left_gen)
@@ -297,10 +304,17 @@ def script(task, ctx):
         elif not left_done:
             ly = LEFT_Y0 + max(0.0, face - READY_FACE_Y - 0.030)
             if ly < lift_at:
-                L.aim(np.array([LEFT_X_PRESS, ly, LEFT_Z]), gl)
+                L.aim(np.array([LEFT_X_RIDE, ly, LEFT_Z]), gl)
             else:
                 left_done = True
                 left_gen = left_away()
+        if variant == "lift_over":       # bypass test: the board is teleported 25 mm up while it passes over the blade (no arm can do this)
+            from partkit import write_pose
+
+            bs = ctx.states()["board"]
+            if bs.high[1] > T.BLADE_Y0 + 0.008 and bs.low[1] < T.BLADE_Y1 + 0.010:
+                write_pose(ctx.emb._env, "board", (bs.pos[0], bs.pos[1], bs.pos[2] + (0.025 if bs.pos[2] < T.SAW_TOP + 0.02 else 0.0)), bs.quat_xyzw,
+                           bs.lin_vel, (0, 0, 0))
         k += 1
         if k % 40 == 0 and os.environ.get("DEMO_DEBUG"):
             print("PUSH face", round(face, 3), flush=True)
