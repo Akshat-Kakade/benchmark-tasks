@@ -1,11 +1,10 @@
-"""Scripted full-score demo for the table-saw rip task, run in the yam_arena embodiment.
+"""Scripted full-score demo for the table-saw crosscut task, run in the yam_arena embodiment.
 
     python demo.py task.py demo_out [--max-steps 1500] [--no-record]
 
-Open loop in the fixed layout (task constants); the only feedback is each arm's own joint positions (proprioception: the
-measured TCP is integrated into the command), never an object pose. The right arm takes the push stick by its grip fin
-and pushes the board from behind with the forked heel; the left arm presses the board's outer edge toward the fence for
-the first 60 mm (the entry), then lifts away. DEMO_VARIANT: settle, probe, one_right, one_left, bare_hand, early_lift, lift_over, no_release.
+Open loop in the fixed layout (task constants); the only feedback is each arm's own joint positions (proprioception: the measured TCP is
+integrated into the command), never an object pose. Each arm takes its push stick by the grip fin and pushes its half of the plank's rear edge
+through the blade, both at the same speed, one on each side of the blade. DEMO_VARIANT: settle, one_right, one_left, shuffle, lift_over.
 """
 
 from __future__ import annotations
@@ -120,32 +119,21 @@ def _rz(a):
 
 
 os.environ["SAW_NO_HOOKS"] = "1"        # constants only: this copy of task.py must not register simulator hooks
+os.environ["SAW_NO_HOOKS"] = "1"        # constants only: this copy of task.py must not register simulator hooks
 import task as T  # noqa: E402
 os.environ.pop("SAW_NO_HOOKS")
 
-SPEED_ENTRY, SPEED = 0.020, 0.035      # push speeds (m/s): the first 60 mm (the board enters the blade) is slower
-HAND_BEHIND = -T.FIN_Y                 # fin is this far behind the heel's front face
+SPEED_ENTRY, SPEED = 0.020, 0.035      # push speeds (m/s): the first 60 mm (the plank meets the blade) is slower
+HAND_BEHIND = -T.FIN_X                 # fin is this far behind the heel's front face
 CARRY_DZ = 0.007                       # lift of the stick (heel bottom 7 mm above the saw table)
-FIN_Z = T.SAW_TOP + 0.0005 + T.OZ + T.BAR_Z1 + T.FIN[2] / 2 - T.HEEL_Z0 - T.OZ   # fin centre height on the station table
-REST_FACE_Y = T.STICK_START[1]
-READY_FACE_Y = T.BOARD_REAR0 - 0.030   # heel front face just behind the board's rear end
-END_FACE_Y = T.CUT_DONE + 0.012
-LEFT_X_PRESS = float(os.environ.get("LEFT_X", "0.204"))       # hold-down pad over the board, straddling the kerf, next to the fence
-XS = T.BLADE_X + float(os.environ.get("STICK_DX", "0.0"))   # the stick line, shifted toward the fence
-LEFT_X_RIDE = float(os.environ.get("LEFT_X_RIDE", "0.204"))   # the pad slides the board to the fence, then rides at this x
-LEFT_Y0 = T.BOARD_REAR0 + 0.015
-LEFT_Y1 = LEFT_Y0 + (T.LOAD_END_REAR - T.BOARD_REAR0)         # the hand rides with the rear end until the loads end
-LEFT_Z = T.TOP + 0.030 + 0.019 + 0.013 - float(os.environ.get("PRESS_MM", "10")) / 1000   # pad bottom (13 mm below TCP) this far below the board top
+FIN_Z = T.SAW_TOP + 0.0005 + T.BAR_Z1 + T.FIN[2] / 2 - T.HEEL_Z0   # fin centre height
+READY_FACE_X = T.PLANK_REAR0 - 0.030   # heel front face just behind the plank's rear edge
+END_FACE_X = T.CUT_DONE + 0.012
 
 
 def wait(seconds: float):
     for _ in range(max(1, round(seconds * CONTROL_HZ))):
         yield
-
-
-def _rz(a):
-    c, s = math.cos(a), math.sin(a)
-    return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
 
 
 def par(*gens):
@@ -164,22 +152,6 @@ def par(*gens):
             yield
 
 
-def home(arm, duration: float):
-    """Return an arm to its ready pose (joint-space blend), which keeps the hand 180 mm above the table, clear of the blade zone."""
-    from yam_arena import ik
-    from yam_arena.constants import READY
-
-    q0, q1, g0 = arm.q.copy(), np.array(READY, float), arm.grip
-    n = max(1, round(duration * CONTROL_HZ))
-    for k in range(1, n + 1):
-        s_ = ik.smoothstep(k / n)
-        arm.q = q0 + s_ * (q1 - q0)
-        arm.grip = g0 + s_ * (1.0 - g0)
-        arm.cmd = np.r_[arm.q, arm.grip]
-        arm.pos, arm.rot = ik.tcp_pose(arm.q, arm.base)
-        yield
-
-
 def reachable_yaw(arm, pos, cands):
     from yam_arena import ik
     from yam_arena.demo import grip_rotation
@@ -195,141 +167,80 @@ def reachable_yaw(arm, pos, cands):
 def script(task, ctx):
     from yam_arena.demo import grip_rotation
 
-    L, Rr = ctx.left, ctx.right
     variant = os.environ.get("DEMO_VARIANT", "")
     if variant == "settle":
         yield from wait(8.0)
         return
     for _ in range(12):
         yield
-    fin_rest = np.array([T.STICK_START[0], REST_FACE_Y + T.FIN_Y, FIN_Z])
-    yaw_r = float(os.environ["YAW_R"]) * math.pi / 2 if os.environ.get("YAW_R") else reachable_yaw(Rr, fin_rest + [0, 0, CARRY_DZ], (0.0, math.pi))
-    yaw_l = float(os.environ["YAW_L"]) * math.pi / 2 if os.environ.get("YAW_L") else reachable_yaw(L, np.array([LEFT_X_PRESS, LEFT_Y0, LEFT_Z]), (math.pi / 2, -math.pi / 2))
-    gr, gl = grip_rotation(yaw_r), grip_rotation(yaw_l)
-    print("YAW", yaw_r, yaw_l, flush=True)
-    if variant == "probe":          # IK / reach check along the whole path, no contact
-        pts_r = [fin_rest, fin_rest + [0, 0, CARRY_DZ], np.array([XS, READY_FACE_Y + T.FIN_Y, FIN_Z + CARRY_DZ]),
-                 np.array([XS, END_FACE_Y + T.FIN_Y, FIN_Z + CARRY_DZ])]
-        for p in pts_r:
-            yield from Rr.move(p, gr, 1.5, grip=1.0)
-            print("PROBE R", np.round(p, 3).tolist(), "worst_mm", round(Rr.worst_mm, 1), flush=True)
-        for p in [(0.33, LEFT_Y0, LEFT_Z + 0.05), (0.33, LEFT_Y0, LEFT_Z), (LEFT_X_PRESS, LEFT_Y0, LEFT_Z), (LEFT_X_PRESS, LEFT_Y1, LEFT_Z),
-                  (0.36, LEFT_Y1, LEFT_Z + 0.08)]:
-            L.worst_mm = 0.0
-            yield from L.move(np.array(p), gl, 1.5, grip=0.0)
-            print("PROBE L", np.round(p, 3).tolist(), "worst_mm", round(L.worst_mm, 1), flush=True)
-        return
+    if variant == "lift_over":     # bypass test: an upward force on the plank (2x its weight) stands for lifting it over the blade; no arm can do this
+        os.environ["SAW_TEST_LIFT"] = "9.0"
+    arms = {"R": (ctx.right, -T.STICK_Y), "L": (ctx.left, T.STICK_Y)}
+    use = {"one_right": ("R",), "one_left": ("L",)}.get(variant, ("R", "L"))
+    rots = {}
+    for k in use:
+        arm, y = arms[k]
+        fin_rest = np.array([T.STICK_FACE_REST - HAND_BEHIND, y, FIN_Z])
+        rots[k] = grip_rotation(0.0)      # fingers open along y: pinch the fin; reach-checked offline over the whole push (<= 0.1 mm)
 
-    def grab():
-        yield from Rr.move(fin_rest + [0, 0, 0.09], gr, 3.0, grip=1.0)
-        yield from Rr.move(fin_rest, gr, 1.5)
-        yield from Rr.set_grip(0.0, 1.0)
+    def grab(k):
+        arm, y = arms[k]
+        gr = rots[k]
+        fin_rest = np.array([T.STICK_FACE_REST - HAND_BEHIND, y, FIN_Z])
+        yield from arm.move(fin_rest + [0, 0, 0.09], gr, 3.0, grip=1.0)
+        yield from arm.move(fin_rest, gr, 1.5)
+        yield from arm.set_grip(0.0, 1.0)
         yield from wait(0.4)
-        Rr.gain, Rr.cap = 0.06, 0.02
-        Rr.feedback(True)
-        yield from Rr.move(fin_rest + [0, 0, CARRY_DZ], gr, 1.2)
-        ready = np.array([XS, READY_FACE_Y + T.FIN_Y, FIN_Z + CARRY_DZ])
-        stage = ready - [0, 0.06, 0]
-        yield from Rr.move(stage, gr, 3.0)
-        yield from wait(1.0)
-        yield from Rr.move(ready, gr, 3.0)
-        yield from wait(1.0)
-
-    def left_prepare():
-        yield from L.move(np.array([0.25, -0.03, T.SAW_TOP + 0.20]), gl, 3.5, grip=0.0)       # high over the blade zone (> 150 mm)
-        yield from L.move(np.array([LEFT_X_PRESS, LEFT_Y0, T.SAW_TOP + 0.20]), gl, 2.0)
-        yield from L.move(np.array([LEFT_X_PRESS, LEFT_Y0, LEFT_Z + 0.008]), gl, 2.0)
+        arm.gain, arm.cap = 0.06, 0.02
+        arm.feedback(True)
+        yield from arm.move(fin_rest + [0, 0, CARRY_DZ], gr, 1.2)
+        ready = np.array([READY_FACE_X - HAND_BEHIND, y, FIN_Z + CARRY_DZ])
+        yield from arm.move(ready - [0.03, 0, 0], gr, 2.0)
+        yield from wait(0.5)
+        yield from arm.move(ready, gr, 1.5)
         yield from wait(0.5)
 
-    if variant == "one_left":       # left arm alone: a bare closed hand pushes the board from its rear end (no stick)
-        yield from L.move(np.array([T.OFF_CX, T.BOARD_REAR0 - 0.05, LEFT_Z + 0.09]), gl, 3.0, grip=0.0)
-        yield from L.move(np.array([T.OFF_CX, T.BOARD_REAR0 - 0.05, LEFT_Z]), gl, 1.5)
-        L.feedback(True)
-        y = T.BOARD_REAR0 - 0.05
-        for k in range(int(30 * CONTROL_HZ)):
-            y += 0.03 / CONTROL_HZ
-            L.aim(np.array([T.OFF_CX, y, LEFT_Z]), gl)
+    yield from par(*[grab(k) for k in use])
+
+    def aim_all(face):
+        for k in use:
+            arm, y = arms[k]
+            arm.aim(np.array([face - HAND_BEHIND, y, FIN_Z + CARRY_DZ]), rots[k])
+
+    face = READY_FACE_X
+    if variant == "shuffle":      # back-and-forth over the same 20 mm region of the cut: the cut front must not add up
+        lo = T.BLADE_X0 - T.PLANK_B - 0.005 + 0.012      # heel face where the plank front is 12 mm past the blade's leading edge
+        hi = lo + 0.020
+        while face < lo:
+            face += SPEED_ENTRY / CONTROL_HZ
+            aim_all(face)
             yield
-        return
-    if variant == "bare_hand":      # both arms: left holds, right pushes with a bare closed hand behind the board
-        yield from par(left_prepare(), Rr.move(np.array([T.STRIP_CX + 0.02, T.BOARD_REAR0 - 0.06, FIN_Z + 0.05 + CARRY_DZ]), gr, 4.0, grip=0.0))
-        yield from Rr.move(np.array([T.STRIP_CX + 0.02, T.BOARD_REAR0 - 0.06, T.TOP + 0.045]), gr, 1.5)
-        Rr.feedback(True)
-        yield from L.move(np.array([LEFT_X_PRESS, LEFT_Y0, LEFT_Z]), gl, 1.5)
-        y = T.BOARD_REAR0 - 0.06
-        for k in range(int(25 * CONTROL_HZ)):
-            y += SPEED / CONTROL_HZ
-            Rr.aim(np.array([T.STRIP_CX + 0.02, y, T.TOP + 0.045]), gr)
-            if variant != "bare_hand" or y < LEFT_Y1 - 0.03:
-                L.aim(np.array([LEFT_X_PRESS, LEFT_Y0 + (y - (T.BOARD_REAR0 - 0.06)), LEFT_Z]), gl)
+        for _ in range(8):
+            for tgt in (hi, lo):
+                while abs(face - tgt) > 1e-4:
+                    face += math.copysign(min(SPEED / CONTROL_HZ, abs(tgt - face)), tgt - face)
+                    aim_all(face)
+                    yield
+        for _ in range(int(2 * CONTROL_HZ)):
             yield
-        return
-    if variant == "one_right":
-        yield from grab()
     else:
-        yield from par(grab(), left_prepare())
-    # -- push, the left arm presses the board edge toward the fence over the first 60 mm ---------------------------------
-    if variant != "one_right":
-        L.feedback(False)
-        yield from L.move(np.array([LEFT_X_PRESS, LEFT_Y0, LEFT_Z]), gl, 2.0)
-        yield from wait(0.5)
-        if LEFT_X_RIDE != LEFT_X_PRESS:            # hold the board to the fence: the pad drags it toward the fence
-            yield from L.move(np.array([LEFT_X_RIDE, LEFT_Y0, LEFT_Z]), gl, 1.5)
-            yield from wait(0.5)
-    face = READY_FACE_Y
-    lift_at = LEFT_Y1 if variant != "early_lift" else LEFT_Y0 + 0.01
-    left_gen = None
-    left_done = variant == "one_right"
+        while face < END_FACE_X:
+            face += (SPEED_ENTRY if face - READY_FACE_X < 0.060 else SPEED) / CONTROL_HZ
+            aim_all(face)
+            yield
 
-    def left_away():
-        L.feedback(False)
-        yield from L.move(np.array([LEFT_X_RIDE, L.pos[1], T.SAW_TOP + 0.22]), gl, 2.0, grip=1.0)      # straight up above 150 mm before going home
-        yield from home(L, 3.0)
-
-    def right_away():
+    def away(k):
+        arm, y = arms[k]
+        gr = rots[k]
         yield from wait(1.5)
-        yield from Rr.set_grip(1.0, 1.0)
-        yield from Rr.move(Rr.pos + [0, 0, 0.04], gr, 1.0)
-        yield from Rr.move(np.array([XS, Rr.pos[1] - 0.12, Rr.pos[2] + 0.04]), gr, 2.0)
+        yield from arm.set_grip(1.0, 1.0)
+        yield from arm.move(arm.pos + [0, 0, 0.04], gr, 1.0)
+        yield from arm.move(np.array([arm.pos[0] - 0.12, y, arm.pos[2] + 0.04]), gr, 2.0)
 
-    k = 0
-    while face < END_FACE_Y:
-        face += (SPEED_ENTRY if face - READY_FACE_Y < 0.060 else SPEED) / CONTROL_HZ
-        Rr.aim(np.array([XS, face + T.FIN_Y, FIN_Z + CARRY_DZ]), gr)
-        if left_gen is not None:
-            try:
-                next(left_gen)
-            except StopIteration:
-                left_gen = None
-        elif not left_done:
-            ly = LEFT_Y0 + max(0.0, face - READY_FACE_Y - 0.030)
-            if ly < lift_at:
-                L.aim(np.array([LEFT_X_RIDE, ly, LEFT_Z]), gl)
-            else:
-                left_done = True
-                left_gen = left_away()
-        if variant == "lift_over":       # bypass test: the board is teleported 25 mm up while it passes over the blade (no arm can do this)
-            from partkit import write_pose
-
-            bs = ctx.states()["board"]
-            if bs.high[1] > T.BLADE_Y0 + 0.008 and bs.low[1] < T.BLADE_Y1 + 0.010:
-                write_pose(ctx.emb._env, "board", (bs.pos[0], bs.pos[1], bs.pos[2] + (0.025 if bs.pos[2] < T.SAW_TOP + 0.02 else 0.0)), bs.quat_xyzw,
-                           bs.lin_vel, (0, 0, 0))
-        k += 1
-        if k % 40 == 0 and os.environ.get("DEMO_DEBUG"):
-            print("PUSH face", round(face, 3), flush=True)
-        yield
-    if left_gen is not None:
-        for _ in left_gen:
-            yield
-
-    if variant == "one_right":
-        yield from right_away()
-    else:
-        yield from right_away()
+    yield from par(*[away(k) for k in use])
     yield from wait(4.0)
     st = ctx.states()
-    print("FINAL", {k: np.round(np.asarray(st[k].pos), 4).tolist() for k in ("strip", "offcut", "stick")}, "blade_off", task._STATE.get("blade_boxes_off"), "w", task._STATE.get("wmin"), task._STATE.get("wmax"), flush=True)
+    print("FINAL", {k: np.round(np.asarray(st[k].pos), 4).tolist() for k in ("board", "half_l", "half_r")}, flush=True)
 
 
 class Ctx:
@@ -400,7 +311,7 @@ def run(task_path: str, out_dir: str, max_steps: int = 1500, record: bool = True
             msg = f"step {steps} score {info.get('score')}"
             if os.environ.get("DEMO_DEBUG"):
                 inf = task._STATE.get('info', {})
-                msg += f" | held {task._STATE['held']} gate {task._STATE['gate']} " + ', '.join(f'{k} {round(v,3) if isinstance(v,float) else v}' for k, v in inf.items() if k in ('rear','front','zone','hand_piece','tilt','speed','lifted','why'))
+                msg += f" | held {task._STATE['held']} gate {task._STATE['gate']} " + ', '.join(f'{k} {round(v,3) if isinstance(v,float) else v}' for k, v in inf.items() if k in ('rear','front','zone','hand_piece','tilt','speed','lifted','why','kerf','wander'))
                 from yam_arena import ik as _ik
                 for nm, arm_, sl in (("L", ctx.left, slice(0, 6)), ("R", ctx.right, slice(7, 13))):
                     pa, _r = _ik.tcp_pose(np.asarray(ctx.last_state)[sl], arm_.base)

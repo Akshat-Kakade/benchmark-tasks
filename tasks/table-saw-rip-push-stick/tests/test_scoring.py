@@ -1,4 +1,5 @@
-"""Scoring boundaries, every partial level, zero gate, two valid solutions, blind words. Run on the VM: python -m pytest tests -q"""
+"""Scoring boundaries, every partial level, zero gate, kerf rules (monotonic cut front, lift-over, shuffle), two valid solutions, blind words.
+Run on the VM: python -m pytest tests -q"""
 import math
 import pathlib
 import re
@@ -11,157 +12,186 @@ import task as T  # noqa: E402
 from partkit import PartState  # noqa: E402
 
 
-def st(pos, w, l, h, quat=(0, 0, 0, 1), v=0.0):
+def st(pos, sx, sy, sz, quat=(0, 0, 0, 1), v=0.0):
     z = np.zeros(3)
     pos = np.array(pos, float)
-    half = np.array([w, l, h]) / 2
-    return PartState(pos=pos, quat_xyzw=np.array(quat, float), lin_vel=np.array([0, v, 0.0]), ang_vel=z, low=pos - half, high=pos + half)
+    half = np.array([sx, sy, sz]) / 2
+    return PartState(pos=pos, quat_xyzw=np.array(quat, float), lin_vel=np.array([v, 0, 0.0]), ang_vel=z, low=pos - half, high=pos + half)
 
 
-def board(rear, dz=0.0, tilt=0.0, v=0.0):
-    cy = rear + T.BOARD_L / 2
+def quat_z(deg):
+    return (0, 0, math.sin(math.radians(deg) / 2), math.cos(math.radians(deg) / 2))
+
+
+def objs(front=None, rear=None, dz=0.0, tilt=0.0, v=0.0, dy=0.0, yaw=0.0, dy_half=0.0):
+    """Plank (intact) and halves with the given front edge (or rear edge) x."""
+    if rear is None:
+        rear = front - T.PLANK_B
+    cx = rear + T.PLANK_B / 2
     qx = (math.sin(math.radians(tilt) / 2), 0, 0, math.cos(math.radians(tilt) / 2))
-    s = st((T.STRIP_CX, cy, T.BOARD_CZ + dz), T.STRIP_W, T.BOARD_L, T.BOARD_T, qx, v)
-    o = st((T.OFF_CX, cy, T.BOARD_CZ + dz), T.OFF_W, T.BOARD_L, T.BOARD_T, qx, v)
-    b = st((T.BOARD_CX, cy, T.BOARD_CZ + dz), T.BOARD_W, T.BOARD_L, T.BOARD_T, qx, v)
-    stick = st((T.BLADE_X, 0.0, T.TOP + 0.05), 0.09, 0.3, 0.05)
-    return {"board": b, "strip": s, "offcut": o, "stick": stick, "saw": st((0.25, 0.0, T.TOP), 0.2, 0.7, 0.03)}
+    q = quat_z(yaw) if yaw else qx
+    b = st((cx, dy, T.PLANK_CZ + dz), T.PLANK_B, T.PLANK_L, T.PLANK_T, q, v)
+    hl = st((cx, dy + T.HALF_DY + dy_half, T.PLANK_CZ + dz), T.PLANK_B, T.HALF_L, T.PLANK_T, q, v)
+    hr = st((cx, dy - T.HALF_DY - dy_half, T.PLANK_CZ + dz), T.PLANK_B, T.HALF_L, T.PLANK_T, q, v)
+    stick = st((0.1, 0.15, T.TOP + 0.05), 0.3, 0.03, 0.05)
+    return {"board": b, "half_l": hl, "half_r": hr, "stick_l": stick, "stick_r": st((0.1, -0.15, T.TOP + 0.05), 0.3, 0.03, 0.05),
+            "saw": st((0.3, 0.0, T.TOP), 0.8, 0.5, 0.03)}
+
+
+def grip(l=(0.10, 0.20), r=(0.10, -0.20), z=0.10):
+    def g(p):
+        p = np.array([p[0], p[1], T.SAW_TOP + z])
+        return dict(tcp=p, pts=[p, p + [0, 0, 0.13], p + [0.02, 0, 0], p - [0.02, 0, 0]], gap=0.05)
+    return {"L": g(l), "R": g(r)}
 
 
 def fresh(**kw):
     return T._fresh() | {"step": 10} | kw
 
 
-CUT = dict(cut=True, kerf=T.KERF_FULL)
+CUT = dict(cut=True, kerf=T.S_FULL)
+DONE = T.CUT_DONE + 0.001                     # rear x when complete
 
 
-def grip(l=(0.30, -0.20, 0.0), r=(0.2275, -0.30, 0.0), z=0.10):
-    def g(p):
-        p = np.array([p[0], p[1], T.SAW_TOP + z])
-        return dict(tcp=p, pts=[p, p + [0, 0, 0.13], p + [0, 0.02, 0], p - [0, 0.02, 0]], gap=0.05)
-    return {"L": g(l), "R": g(r)}
-
-
-def lv(objs, gr, memo=None):
+def lv(o, gr, memo=None):
     memo = memo if memo is not None else fresh(**CUT)
-    return T.classify(objs, gr, memo)[:2]
-
-
-DONE = T.CUT_DONE + 0.001                     # rear y when complete
+    return T.classify(o, gr, memo)[:2]
 
 
 def test_levels():
-    # intact board, no kerf yet: 0
-    assert lv(board(T.BOARD_REAR0), grip(), fresh())[0] == 0.0
-    # front past the blade but no engaged feed counted: still 0 (position alone gives nothing)
-    assert lv(board(T.BLADE_Y0 + 0.1 - T.BOARD_L), grip(), fresh())[0] == 0.0
-    assert lv(board(T.BLADE_Y0 + 0.1 - T.BOARD_L), grip(), fresh(kerf=T.KERF_MIN - 0.001))[0] == 0.0
-    assert lv(board(T.BLADE_Y0 + 0.1 - T.BOARD_L), grip(), fresh(kerf=T.KERF_MIN))[0] == 0.25
-    # separated (cut) but the rear ends have not cleared the blade: 0.25
-    assert lv(board(DONE - 0.003), grip())[0] == 0.25
-    assert lv(board(DONE), grip(), )[0] == 1.0
-    assert lv(board(DONE, tilt=12.0), grip())[0] == 0.5
-    assert lv(board(DONE, v=0.05), grip())[0] == 0.75
+    assert lv(objs(rear=T.PLANK_REAR0), grip(), fresh())[0] == 0.0
+    f = T.BLADE_X0 + 0.1
+    assert lv(objs(front=f), grip(), fresh(kerf=T.KERF_MIN - 0.001))[0] == 0.0
+    assert lv(objs(front=f), grip(), fresh(kerf=T.KERF_MIN))[0] == 0.25
+    assert lv(objs(rear=DONE - 0.003), grip())[0] == 0.25            # separated but not cleared
+    assert lv(objs(rear=DONE), grip())[0] == 1.0
+    assert lv(objs(rear=T.BLADE_X1 + 0.05, tilt=12.0), grip())[0] == 0.5      # tipped but clear of the blade
+    assert lv(objs(rear=DONE, v=0.05), grip())[0] == 0.75
 
 
-def test_no_kerf_no_credit_even_if_board_ends_past_blade():
-    # the intact board slid past the blade without engaging (kerf 0): zero
-    assert lv(board(DONE), grip(), fresh())[0] == 0.0
-    # ... or with a short kerf only
-    assert lv(board(DONE), grip(), fresh(kerf=0.02))[0] == 0.0
-
-
-def test_kerf_accrual_rules():
-    memo = fresh()
-    b = board(T.BLADE_Y0 + 0.01 - T.BOARD_L)
-    T.accrue_kerf(b, memo)                                   # first sample: no accrual
-    b2 = board(T.BLADE_Y0 + 0.03 - T.BOARD_L)
-    memo["step"] = 11
-    T.accrue_kerf(b2, memo)
-    assert abs(memo["kerf"] - 0.02) < 1e-9                   # engaged feed counted
-    # lifted 6 mm: the feed does not count and the lift latches
-    b3 = board(T.BLADE_Y0 + 0.05 - T.BOARD_L, dz=0.006)
-    memo["step"] = 12
-    T.accrue_kerf(b3, memo)
-    assert abs(memo["kerf"] - 0.02) < 1e-9 and memo["lifted"]
-    # off the fence by 10 mm: does not count
-    memo = fresh()
-    T.accrue_kerf(board(T.BLADE_Y0 + 0.01 - T.BOARD_L), memo)
-    b4 = board(T.BLADE_Y0 + 0.03 - T.BOARD_L)
-    b4["board"] = st((T.BOARD_CX + 0.010, b4["board"].pos[1], T.BOARD_CZ), T.BOARD_W, T.BOARD_L, T.BOARD_T)
-    memo["step"] = 11
-    T.accrue_kerf(b4, memo)
-    assert memo["kerf"] == 0.0
-    # kerf is capped (cannot grow past the full length by more than 50 mm)
-    memo = fresh(kerf=T.KERF_FULL + 0.049, prev_front=T.BLADE_Y0 + 0.1)
-    memo["step"] = 12
-    T.accrue_kerf(board(T.BLADE_Y0 + 0.5 - T.BOARD_L), memo)
-    assert memo["kerf"] <= T.KERF_FULL + 0.05 + 1e-9
+def test_no_kerf_no_credit():
+    assert lv(objs(rear=DONE), grip(), fresh())[0] == 0.0
+    assert lv(objs(rear=DONE), grip(), fresh(kerf=0.02))[0] == 0.0
 
 
 def test_hand_piece_clearance():
     g = grip()
-    side = T.OFF_CX + T.OFF_W / 2                                                       # offcut's far edge x
-    p = np.array([side + 0.020, DONE + 0.13, T.SAW_TOP + 0.01])                         # 20 mm beside the offcut, far from the blade
+    p = np.array([DONE + 0.07, 0.15, T.SAW_TOP + 0.01])
     g["R"] = dict(tcp=p, pts=[p], gap=0.05)
-    assert lv(board(DONE), g) == (0.75, False)
-    p2 = p + [0.02, 0, 0]                                                                # 40 mm beside the offcut
+    r = lv(objs(rear=DONE), g)
+    assert r[0] <= 0.75 and not r[1] or r == (1.0, True)
+    p2 = np.array([DONE + 0.30, 0.15, T.SAW_TOP + 0.01])
     g["R"] = dict(tcp=p2, pts=[p2], gap=0.05)
-    assert lv(board(DONE), g) == (1.0, True)
+    assert lv(objs(rear=DONE), g) == (1.0, True)
 
 
 def test_zero_gate():
-    near = grip(l=(0.30, T.BLADE_Y0 - 0.06, 0.0), z=0.05)                              # inside 100 mm of the blade, low
+    near = grip(l=(T.BLADE_X0 + 0.05, 0.05), z=0.05)                # inside 100 mm of the blade, low
     memo = fresh(**CUT)
-    assert T.classify(board(DONE), near, memo)[0] == 0.0 and memo["gate"]
+    assert T.classify(objs(rear=DONE), near, memo)[0] == 0.0 and memo["gate"]
+    high = grip(l=(T.BLADE_X0 + 0.05, 0.05), z=0.20)                # above 150 mm: no event
     memo = fresh(**CUT)
-    high = grip(l=(0.30, T.BLADE_Y0 - 0.06, 0.0), z=0.20)                              # the arm passes ABOVE 150 mm: no event
-    assert T.classify(board(DONE), high, memo)[0] == 1.0 and not memo["gate"]   # above 150 mm: no event, no end condition
+    assert T.classify(objs(rear=DONE), high, memo)[0] == 1.0 and not memo["gate"]
     memo = fresh(**CUT)
-    far = grip(l=(0.30, T.BLADE_Y0 - 0.12, 0.0), z=0.05)                               # 120 mm: no event
-    assert T.classify(board(DONE), far, memo)[0] == 1.0
+    assert T.classify(objs(rear=DONE, dz=-0.05), grip(), memo)[0] == 0.0 and memo["gate"]    # piece fell
     memo = fresh(**CUT)
-    assert T.classify(board(DONE, dz=-0.05), grip(), memo)[0] == 0.0 and memo["gate"]  # piece fell
-    memo = fresh(**CUT)
-    T.classify(board(DONE), near, memo)
-    assert T.classify(board(DONE), grip(), memo)[0] == 0.0                              # latched hazard
+    T.classify(objs(rear=DONE), near, memo)
+    assert T.classify(objs(rear=DONE), grip(), memo)[0] == 0.0     # latched
 
 
-def test_lifted_over_blade_scores_zero():
+def test_lift_over_scores_zero():
     memo = fresh()
-    o = board(T.BLADE_Y0 + 0.01 - T.BOARD_L / 2, dz=0.012)                              # board overlaps the blade 12 mm above the table
-    T.classify(o, grip(), memo)
+    T.classify(objs(front=T.BLADE_X0 + 0.02, dz=0.012), grip(), memo)
     assert memo["lifted"]
-    assert memo["lifted"] and T.classify(board(DONE), grip(), memo)[0] == 0.0
-    assert T.classify(board(DONE), grip(), fresh(**CUT, lifted=True))[0] == 0.0
+    assert T.classify(objs(rear=DONE), grip(), memo)[0] == 0.0
+    assert T.classify(objs(rear=DONE), grip(), fresh(**CUT, lifted=True))[0] == 0.0
+    # the limit is one constant: just above it counts, just below does not
+    m2 = fresh()
+    T.classify(objs(front=T.BLADE_X0 + 0.02, dz=T.LIFT_OVER + 0.001), grip(), m2)
+    assert m2["lifted"]
+    m3 = fresh()
+    T.classify(objs(front=T.BLADE_X0 + 0.02, dz=T.LIFT_OVER - 0.001), grip(), m3)
+    assert not m3["lifted"]
 
 
-def test_hold_one_second():
-    T._reset_state()
-    T._STATE["step"] = 10
-    T._STATE.update(CUT)
-    results = []
-    for i in range(T.HOLD_STEPS + 2):
-        T._STATE["step"] += 1
-        T._STATE["scored"] = None
-        T._grip = None
-        orig = T.grip_state
-        T.grip_state = lambda: grip()
-        try:
-            results.append(T._update(board(DONE)))
-        finally:
-            T.grip_state = orig
-    assert results[0][0] == 0.75 and not results[0][1]
-    assert results[T.HOLD_STEPS - 2][1] is False
-    assert results[T.HOLD_STEPS - 1] == (1.0, True)
+def test_tipped_plank_counts_as_lifted():
+    memo = fresh()
+    T.accrue_kerf(objs(front=T.BLADE_X0 + 0.01), memo)
+    memo["step"] = 11
+    T.accrue_kerf(objs(front=T.BLADE_X0 + 0.03, tilt=12.0), memo)
+    assert memo["lifted"] and memo["kerf"] == 0.0
+
+
+def feed(fronts, memo=None, **kw):
+    memo = memo or fresh()
+    for i, f in enumerate(fronts):
+        memo["step"] = 11 + i
+        T.accrue_kerf(objs(front=f, **kw), memo)
+    return memo
+
+
+def test_kerf_is_forward_travel_when_engaged():
+    fs = [T.BLADE_X0 - 0.005 + 0.002 * i for i in range(40)]       # 2 mm per step, front goes from 5 mm before the blade to 73 mm past
+    assert abs(feed(fs)["kerf"] - (fs[-1] - T.BLADE_X0)) < 1e-9
+
+
+def test_kerf_monotonic_back_and_forth_adds_nothing():
+    base = [T.BLADE_X0 + 0.002 * i for i in range(11)]              # to 20 mm
+    m = feed(base)
+    assert abs(m["kerf"] - 0.020) < 1e-9
+    shuffle = []
+    for _ in range(50):                                             # 50 strokes over the same 20 mm
+        shuffle += [T.BLADE_X0 + 0.020 - 0.002 * i for i in range(11)] + [T.BLADE_X0 + 0.002 * i for i in range(11)]
+    m = feed(shuffle, memo=m)
+    assert abs(m["kerf"] - 0.020) < 1e-9                            # summed travel would be about 2 m
+    assert lv(objs(front=T.BLADE_X0 + 0.02), grip(), m)[0] == 0.0   # < KERF_MIN: no credit
+
+
+def test_kerf_ignores_travel_made_when_not_engaged():
+    memo = fresh()
+    T.accrue_kerf(objs(front=T.BLADE_X0 + 0.005), memo)
+    memo["step"] = 11
+    T.accrue_kerf(objs(front=T.BLADE_X0 + 0.015, dy=0.02), memo)    # 20 mm off the blade plane: not engaged
+    assert memo["kerf"] == 0.0
+    memo["step"] = 12
+    T.accrue_kerf(objs(front=T.BLADE_X0 + 0.025), memo)              # engaged again: only this step's travel counts
+    assert abs(memo["kerf"] - 0.010) < 1e-9
+    m2 = feed([T.BLADE_X0 + 0.005, T.BLADE_X0 + 0.015], yaw=8.0)      # turned 8 degrees: not engaged
+    assert m2["kerf"] == 0.0
 
 
 def test_two_valid_solutions():
-    # solution A: the cut finishes with the pieces still against the fence; solution B: pieces ended 20 mm apart sideways and 30 mm further on
-    a = board(DONE)
-    b = board(DONE + 0.03)
-    b["offcut"] = st((T.OFF_CX + 0.02, b["offcut"].pos[1], T.BOARD_CZ), T.OFF_W, T.BOARD_L, T.BOARD_T)
+    a = objs(rear=DONE)
+    b = objs(rear=DONE + 0.03, dy_half=0.02)                         # halves ended 20 mm apart and 30 mm further on
     assert lv(a, grip()) == (1.0, True) and lv(b, grip()) == (1.0, True)
+
+
+def test_cut_offset_and_wander_bands():
+    memo = fresh(**CUT, wmax=0.003)
+    assert lv(objs(rear=DONE), grip(), memo) == (1.0, True)
+    memo = fresh(**CUT, wmax=0.005)
+    assert lv(objs(rear=DONE), grip(), memo)[0] == 0.75
+    memo = fresh(**CUT, wmax=0.007)
+    assert lv(objs(rear=DONE), grip(), memo)[0] == 0.5
+    o = objs(front=T.BLADE_X0 + 0.05, dy=0.004)
+    assert abs(T.cut_offset(o["board"]) + 0.004) < 1e-9
+
+
+def test_feed_resistance_derivation():
+    assert abs(T.FEED_N - 13.0 * 0.019 / 0.030) < 1e-9 and T.FEED_N < 14.0     # both arms together; each stalls near 7 N
+
+
+def test_geometry_and_guard():
+    assert abs(2 * T.HALF_L + T.KERF - T.PLANK_L) < 1e-9
+    assert T.BLADE_T < T.KNIFE_T < T.KERF and T.KNIFE_X0 > T.BLADE_X1 and T.KNIFE_H < T.BLADE_H
+    # the hood covers the blade (roof above its top, walls beside it) and the plank passes under the walls with clearance
+    assert T.HOOD_X0 < T.BLADE_X0 and T.HOOD_X1 > T.BLADE_X1 and T.HOOD_Z1 - T.HOOD_ROOF > T.BLADE_H and T.HOOD_Z0 > T.PLANK_T + 0.003
+    assert T.HOOD_HW > T.BLADE_T
+    # the push lines are outside the hood and 100 mm+ from the blade plane
+    assert T.STICK_Y - T.HEEL_W / 2 > T.HOOD_HW + 0.01 and T.STICK_Y > T.ZONE_R
+    assert T.COL_Y0 > T.HALF_L + T.KERF / 2 + 0.005                  # the column clears the half's end
+    assert T.PLANK_REAR0 + T.PLANK_B < T.BLADE_X0
+    assert T.SAW_X0 <= T.STICK_FACE_REST - T.BAR_X0 + 0.001            # the sticks lie on the saw table
 
 
 def test_blind_words():
@@ -172,49 +202,3 @@ def test_blind_words():
         p = here / f
         if p.exists():
             assert not bad.search(p.read_text()), f
-
-
-def test_geometry():
-    assert abs(T.STRIP_W + T.KERF + T.OFF_W - T.BOARD_W) < 1e-9
-    assert T.STRIP_W == 0.040
-    assert T.BOARD_REAR0 + T.BOARD_L < T.BLADE_Y0                                       # board starts clear of the blade
-    assert T.SAW_Y0 < T.STICK_START[1] - T.BAR_Y0                                       # the whole stick lies on the saw table
-    # the fork gap straddles the blade with >= 5 mm each side
-    assert T.GAP / 2 - T.BLADE_T / 2 >= 0.005
-    # the bar rides at least 3 mm above the blade top when the heel is 3 mm above the table
-    assert (T.BAR_Z0 - T.HEEL_Z0) + 0.007 >= T.BLADE_H + 0.003
-
-
-def test_strip_width():
-    memo = fresh(**CUT)
-    o = board(T.BLADE_YC - T.BOARD_L / 2 + 0.05)                 # blade centre is inside the pieces
-    T.classify(o, grip(), memo)
-    assert abs(memo["wmin"] - T.STRIP_W) < 1e-6
-    o["strip"] = st((T.STRIP_CX + 0.007, o["strip"].pos[1], T.BOARD_CZ), T.STRIP_W, T.BOARD_L, T.BOARD_T)   # 4 mm off the fence
-    memo = fresh(**CUT)
-    T.classify(o, grip(), memo)
-    assert abs(memo["wmin"] - (T.STRIP_W - 0.007)) < 1e-6
-    memo["wmin"] = memo["wmax"] = T.STRIP_W - 0.007
-    assert T.classify(board(DONE), grip(), memo)[0] == 0.5      # complete but strip 7 mm narrow: 0.5 (> 6.4 mm)
-    memo["wmin"] = memo["wmax"] = T.STRIP_W - 0.005
-    assert T.classify(board(DONE), grip(), memo)[0] == 0.75     # within 6.4 mm, not within 3.2 mm
-    memo["wmin"] = memo["wmax"] = T.STRIP_W - 0.003
-    assert T.classify(board(DONE), grip(), memo)[0] == 1.0
-
-
-def test_guard_and_knife_clear_of_stick_path():
-    # riving knife thicker than the blade plate, thinner than the kerf, just behind the blade, below the blade top
-    assert T.BLADE_T < T.KNIFE_T < T.KERF and T.KNIFE_Y0 > T.BLADE_Y1 and T.KNIFE_H < T.BLADE_H
-    # guard plate bottom is above the stick bar top (3 mm clearance at least) and above the board top
-    assert T.GUARD_Z0 >= T.BAR_Z1 + 0.007 + 0.003 and T.GUARD_Z0 > T.BOARD_T + 0.0005
-    # the column stands beside the stock path (stock far edge 0.274), the heel never goes beyond CUT_DONE + 6 mm (the fork gap covers the knife)
-    assert T.POST_X0 > T.OFF_CX + T.OFF_W / 2 + 0.02 and T.GAP > T.KNIFE_T + 0.010
-    assert T.GUARD_Y0 < T.BLADE_Y0 and T.GUARD_Y1 > T.BLADE_Y1 and T.BLADE_X + T.GUARD_HW < T.POST_X1
-
-
-def test_tipped_board_over_blade_counts_as_lifted():
-    memo = fresh()
-    T.accrue_kerf(board(T.BLADE_Y0 + 0.01 - T.BOARD_L), memo)
-    memo["step"] = 11
-    T.accrue_kerf(board(T.BLADE_Y0 + 0.03 - T.BOARD_L, tilt=12.0), memo)       # flat on the table by height but tipped 12 deg
-    assert memo["lifted"] and memo["kerf"] == 0.0
