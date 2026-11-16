@@ -4,7 +4,7 @@
 
 OPEN LOOP: the waypoints come from the fixed layout in task.py (pan start, handle height, well position). The only feedback is
 each arm's own joint positions (the measured TCP error is integrated into the command), never the pan or well pose.
-Each arm pinches a handle tab (fingers open along x so the jaws resist pitch), both lift the pan 60 mm, carry it 0.315 m to the well, lower it, release and withdraw.
+Each arm pinches the rim flange at the middle of a short end (fingers open along y, across the flange), both lift the pan 60 mm, carry it 0.315 m to the well, lower it, release and withdraw.
 DEMO_VARIANT: settle, spill, spill2, one_arm, tilt, jam, drop, no_release, stop_above, off_alt, off_alt2, slow.
 """
 from __future__ import annotations
@@ -135,7 +135,7 @@ def script(task, ctx):
     hy = task.HANDLE_Y
     z_h = task.TOP + 0.0005 + task.PINCH_Z       # TCP height at the handle bar centre, pan on the table
     x0, xw = task.PAN_X0, task.WELL_X
-    x_bias = 0.004                               # measured: the carried pan sits 4.6 mm behind the commanded x (pitch of the 65 mm tall pinch)
+    x_bias = 0.002               # measured: the carried pan sits ~2 mm behind the commanded x (pitch of the pinch)
     off = {"off_alt": (0.003, 0.004), "off_alt2": (-0.003, -0.004), "jam": (-0.015, 0.0)}.get(variant, (0.0, 0.0))
     z_seat = task.SEAT_Z + task.PINCH_Z - 0.002  # command 2 mm below the seated handle height (arm compliance)
     z_carry = z_h + LIFT
@@ -143,7 +143,7 @@ def script(task, ctx):
     yaws = []
     for arm, s in ((L, 1), (Rr, -1)):
         best = None
-        for yw in (math.pi / 2, -math.pi / 2):
+        for yw in (0.0, math.pi):
             err = 0.0
             for (x, z) in ((x0, z_h), (x0, z_carry), (xw, z_carry), (xw, z_seat)):
                 _, pe, re = ik.solve(ypos(s, x, z), ik.matrix_to_quat_xyzw(grip_rotation(yw)), arm.q, base_pos=arm.base, iters=200)

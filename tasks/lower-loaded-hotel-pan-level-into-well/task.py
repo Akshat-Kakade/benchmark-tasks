@@ -1,7 +1,7 @@
 """On the station table: a stainless half-size hotel pan (325 x 265 mm, 40 mm deep, 10 mm flange, filled with 20 mm of cold water: 2.4 kg
-simulated as one fused body) with an upright orange handle tab on the flange at each short end. Beside it a black steam-table
-counter (40 mm high) has a pit sized for the pan body (6 mm clearance on each side). Both arms must carry the pan by its two
-handles and lower it level into the pit so its flange rests on the counter all round, then let go. A pan scores 0 if it tilts
+simulated as one fused body) and no handles (the arms hold it by its rim). Beside it a black steam-table
+counter (40 mm high) has a pit sized for the pan body (6 mm clearance on each side). Both arms must carry the pan by the rim
+flange at its two short ends and lower it level into the pit so its flange rests on the counter all round, then let go. A pan scores 0 if it tilts
 so that water would overflow at its lowest rim corner (a spill), if it is dropped (hits the counter or pit at over 0.5 m/s) or if it is pushed off the table.
 
 Run it:  inspect-robots run --embodiment yam_arena -E task=task.py --scorer task_score ...
@@ -31,7 +31,6 @@ INSTRUCTION = ("Move the full steel pan from the table into the black steam-tabl
 
 STEEL = (0.72, 0.72, 0.75)
 FOOD = (0.25, 0.50, 0.85)                       # water (drawn as a fused blue box)
-ORANGE = (0.95, 0.50, 0.08)
 BLACK = (0.08, 0.08, 0.09)
 
 # pan, in its own frame (origin: centre of the underside; x forward, y left; long axis along y)
@@ -40,9 +39,8 @@ WALL, FLOOR = 0.002, 0.003
 FL_W, FL_T = 0.010, 0.003                       # rim flange: 10 mm wide, 3 mm thick (outside 285 x 345... see below)
 FL_X, FL_Y = PAN_X + 2 * FL_W, PAN_Y + 2 * FL_W  # outside of the flange: 285 x 345 mm
 FOOD_H = 0.020                                  # cold tap water 20 mm deep (1.68 kg over the 0.261 x 0.321 m inside)
-HANDLE_Y = PAN_Y / 2 + FL_W / 2                 # handle tabs stand on the short flange: y = +-0.1675
-TAB = (0.024, 0.020, 0.045)                     # upright handle tab on each short flange (x, y, z): 24 mm wide, 20 mm thick, 45 mm tall
-BAR_Z = PAN_H + 0.025                           # pinch height above the pan underside (tab mid-height 0.0625; pinch 0.065)
+HANDLE_Y = PAN_Y / 2 + FL_W / 2                 # grip points: the middle of the flange on each short end, y = +-0.1675
+BAR_Z = PAN_H                                   # pinch height above the pan underside: the fingers close on the flange and the 2 mm wall at the rim line
 PINCH_Z = BAR_Z
 
 PAN_BOXES = [
@@ -59,8 +57,6 @@ PAN_BOXES = [
     # water (fused with the pan body: no slosh, no fluid)
     ((0.0, 0.0, FLOOR + FOOD_H / 2), (PAN_X - 2 * WALL, PAN_Y - 2 * WALL, FOOD_H), FOOD),
 ]
-for _s in (1, -1):
-    PAN_BOXES.append(((0.0, _s * HANDLE_Y, PAN_H + TAB[2] / 2), TAB, ORANGE))
 
 # well: a 40 mm counter slab with a pit (opening 277 x 337, clearance 6 mm per side for the 265 x 325 body)
 WELL_X = 0.40
@@ -106,8 +102,8 @@ BODY_IN = TOP + COUNTER_H - 0.004   # pan underside below the counter top: body 
 SEAT_TOL = 0.002              # every flange corner within 2 mm of the counter top
 SEAT_TILT, OFF_MAX = 2.0, 0.008
 HOLD_STEPS = 20
-OPEN_DIST = 0.040             # a gripper TCP this far from the handle centres and open: released
-GRIP_GAP_MIN = 0.065          # finger-tip body distance above this = still pinching a handle (measured: 0.048 open, 0.084 pinching)
+OPEN_DIST = 0.040             # a gripper TCP this far from the grip points and open: released
+GRIP_GAP_MIN = 0.065          # finger-tip body distance above this = still pinching the rim (measured: 0.048 open, 0.084 pinching)
 STILL_V, STILL_W, STILL_Q = 0.01, 0.10, 0.05
 
 _STATE: dict = {}
@@ -195,7 +191,7 @@ def released(pan: PartState, grip) -> bool:
         return False
     for tag in ("A", "B"):
         tcp, gap, _ = grip[tag]
-        if gap > GRIP_GAP_MIN:                      # finger-tip bodies 48 mm apart when open, 84 mm while pinching a handle
+        if gap > GRIP_GAP_MIN:                      # finger-tip bodies 48 mm apart when open, 84 mm while pinching the rim
             return False
         if min(float(np.linalg.norm(pan.to_world((0.0, s * HANDLE_Y, BAR_Z)) - tcp)) for s in (1, -1)) < OPEN_DIST:
             return False
@@ -259,7 +255,7 @@ def _update(objects) -> tuple[float, bool]:
 def success(objects) -> bool:
     """The pan's four flange corners rest on the counter (each within 2 mm of its top), pan centred within 8 mm of the pit
     centre and tilted at most 2 degrees, it never spilled (lowest rim corner dropped more than 17 mm, the water freeboard) or moved faster than 0.5 m/s, both grippers open and
-    40 mm clear of the handles, pan and arms still: true after 1 s (20 steps) of all of this."""
+    40 mm clear of the grip points, pan and arms still: true after 1 s (20 steps) of all of this."""
     return _update(objects)[1]
 
 
