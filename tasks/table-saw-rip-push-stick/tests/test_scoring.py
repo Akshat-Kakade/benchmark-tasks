@@ -178,7 +178,7 @@ def test_cut_offset_and_wander_bands():
 
 
 def test_feed_resistance_derivation():
-    assert abs(T.FEED_N - 13.0 * 0.019 / 0.030) < 1e-9 and T.FEED_N < 14.0     # both arms together; each stalls near 7 N
+    assert abs(T.FEED_N - 10.1 * 0.019 / 0.023) < 1e-9 and T.FEED_N < 9.0     # both arms together; each stalls near 7 N
 
 
 def test_geometry_and_guard():
@@ -192,6 +192,24 @@ def test_geometry_and_guard():
     assert T.COL_Y0 > T.HALF_L + T.KERF / 2 + 0.005                  # the column clears the half's end
     assert T.PLANK_REAR0 + T.PLANK_B < T.BLADE_X0
     assert T.SAW_X0 <= T.STICK_FACE_REST - T.BAR_X0 + 0.001            # the sticks lie on the saw table
+
+
+def test_gauge_geometry():
+    # runners sit in the slots with clearance each side, fence blocks stay outside the hood and blade plane, the lips stop the plank 1 mm from each end
+    clr = (T.SLOT_W - T.RUN_W) / 2
+    assert 0.001 <= clr <= 0.002 and T.RUN_Z0 > -T.SLOT_D and T.RUN_Z1 < T.FENCE_Z0
+    assert T.FENCE_Y0 > T.HOOD_HW + 0.02 and T.FENCE_Y0 > T.BLADE_T
+    assert abs((T.LIP_Y0 - T.PLANK_L / 2) - 0.001) < 1e-9 and T.FENCE_Y1 < T.SAW_Y1 and T.FENCE_Y1 < T.COL_Y1
+    assert T.FENCE_Z1 > T.PLANK_T + 0.005 and T.FENCE_Z0 > 0.002
+    # the stick heels (y 0.13..0.17, from 2 mm up) push the fence rear faces; links and side bars stay inboard of the sticks
+    assert T.FENCE_Y0 < T.STICK_Y - T.HEEL_W / 2 and T.STICK_Y + T.HEEL_W / 2 < T.FENCE_Y1 and T.LINK_Y < T.STICK_Y - T.BAR_W / 2
+    # the gauge never reaches the blade or the hood (fence front 0.012 m past the cut-complete line at the end)
+    end = T.CUT_DONE + 0.012
+    assert end + T.LIP_X < T.COL_Y0 or end + T.LIP_X < T.ARM_X0
+    assert T.SLED_FACE0 - T.RUN_L > T.SAW_X0 and T.SLED_FACE0 < T.PLANK_REAR0
+    assert 0.2 < T.SLED_MASS < 1.0
+    # each box of the sled is inside the 3 slots' envelope of the table in y
+    assert all(abs(c[1]) + sz[1] / 2 <= T.SAW_Y1 for c, sz, _ in T.SLED_BOXES)
 
 
 def test_blind_words():

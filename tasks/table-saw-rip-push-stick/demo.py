@@ -127,8 +127,8 @@ SPEED_ENTRY, SPEED = 0.020, 0.035      # push speeds (m/s): the first 60 mm (the
 HAND_BEHIND = -T.FIN_X                 # fin is this far behind the heel's front face
 CARRY_DZ = 0.007                       # lift of the stick (heel bottom 7 mm above the saw table)
 FIN_Z = T.SAW_TOP + 0.0005 + T.BAR_Z1 + T.FIN[2] / 2 - T.HEEL_Z0   # fin centre height
-READY_FACE_X = T.PLANK_REAR0 - 0.030   # heel front face just behind the plank's rear edge
-END_FACE_X = T.CUT_DONE + 0.012
+READY_FACE_X = T.SLED_FACE0 - T.FENCE_X - 0.030   # heel front face just behind the gauge fence's rear face
+END_FACE_X = T.CUT_DONE + 0.012 - T.FENCE_X       # the gauge fence front (the plank's rear edge) is 12 mm past the cut-complete line
 
 
 def wait(seconds: float):
@@ -209,7 +209,7 @@ def script(task, ctx):
 
     face = READY_FACE_X
     if variant == "shuffle":      # back-and-forth over the same 20 mm region of the cut: the cut front must not add up
-        lo = T.BLADE_X0 - T.PLANK_B - 0.005 + 0.012      # heel face where the plank front is 12 mm past the blade's leading edge
+        lo = T.BLADE_X0 - T.PLANK_B - 0.005 + 0.012 - T.FENCE_X      # heel face where the plank front is 12 mm past the blade's leading edge
         hi = lo + 0.020
         while face < lo:
             face += SPEED_ENTRY / CONTROL_HZ
