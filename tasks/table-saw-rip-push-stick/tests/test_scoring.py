@@ -178,7 +178,15 @@ def test_cut_offset_and_wander_bands():
 
 
 def test_feed_resistance_derivation():
-    assert abs(T.FEED_N - 10.1 * 0.019 / 0.023) < 1e-9 and T.FEED_N < 9.0     # both arms together; each stalls near 7 N
+    # Kminiak and Kubs 2016 (BioResources 11(4)), Fig. 10, 24-tooth blade: 15 / 20 / 25 N cut the 150 mm, 50 mm deep crosscut in 39 / 22.5 / 10.5 s
+    assert abs(T.FEED_N - 15.0 * 0.019 / 0.050) < 1e-9                       # 5.7 N for the 19 mm plank
+    assert abs(T.FEED_CURVE[0][0] - 0.150 / 39.0) < 1e-12 and abs(T.FEED_CURVE[2][1] - 25.0 * 0.019 / 0.050) < 1e-9
+    assert T.feed_resistance(0.0) == 0.0 and T.feed_resistance(-0.01) == 0.0  # never pushes the plank back
+    assert abs(T.feed_resistance(0.0005) - 0.5 * T.FEED_N) < 1e-9           # smoothing ramp below 1 mm/s
+    assert abs(T.feed_resistance(0.002) - T.FEED_N) < 1e-9                  # not reduced below the slowest measured feed
+    assert abs(T.feed_resistance(0.150 / 22.5) - 20.0 * 0.38) < 1e-9        # the 20 N point
+    assert T.feed_resistance(0.030) > T.feed_resistance(0.0143) > T.feed_resistance(0.004)   # rises with speed, extrapolated above 14.3 mm/s
+    assert abs(T.RHO_SPRUCE - 430.0) < 1e-9 and abs(T.BOARD_M - 430.0 * 0.14 * 0.44 * 0.019) < 1e-9
 
 
 def test_geometry_and_guard():

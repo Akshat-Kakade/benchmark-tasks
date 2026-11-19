@@ -123,7 +123,10 @@ os.environ["SAW_NO_HOOKS"] = "1"        # constants only: this copy of task.py m
 import task as T  # noqa: E402
 os.environ.pop("SAW_NO_HOOKS")
 
-SPEED_ENTRY, SPEED = 0.020, 0.035      # push speeds (m/s): the first 60 mm (the plank meets the blade) is slower
+SPEED_ENTRY, SPEED = 0.020, 0.035      # push speeds (m/s) outside the cut: up to the sled fence, and after the cut is through
+SPEED_CUT = float(os.environ.get("SAW_SPEED_CUT", "0.004"))   # m/s while the plank is in the blade: the source's 15 N condition (3.8 mm/s), see task.feed_resistance
+CUT_FACE0 = 0.025                       # heel advance (from READY_FACE_X) where the slow cut feed starts (heel meets the fence at 0.030, plank 5 mm before the blade)
+CUT_FACE1 = 0.030 + 0.005 + 0.1705 + 0.020   # ... and where it ends: cut front 170.5 mm plus 20 mm for the arms' tracking lag
 HAND_BEHIND = -T.FIN_X                 # fin is this far behind the heel's front face
 CARRY_DZ = 0.007                       # lift of the stick (heel bottom 7 mm above the saw table)
 FIN_Z = T.SAW_TOP + 0.0005 + T.BAR_Z1 + T.FIN[2] / 2 - T.HEEL_Z0   # fin centre height
@@ -218,14 +221,15 @@ def script(task, ctx):
         for _ in range(8):
             for tgt in (hi, lo):
                 while abs(face - tgt) > 1e-4:
-                    face += math.copysign(min(SPEED / CONTROL_HZ, abs(tgt - face)), tgt - face)
+                    face += math.copysign(min(SPEED_ENTRY / CONTROL_HZ, abs(tgt - face)), tgt - face)
                     aim_all(face)
                     yield
         for _ in range(int(2 * CONTROL_HZ)):
             yield
     else:
         while face < END_FACE_X:
-            face += (SPEED_ENTRY if face - READY_FACE_X < 0.060 else SPEED) / CONTROL_HZ
+            adv = face - READY_FACE_X
+            face += (SPEED_CUT if CUT_FACE0 <= adv < CUT_FACE1 else SPEED_ENTRY) / CONTROL_HZ
             aim_all(face)
             yield
 
@@ -308,7 +312,9 @@ def run(task_path: str, out_dir: str, max_steps: int = 1500, record: bool = True
         ctx.last_state = next(iter(res.observation.state.values()))
         snap(res.observation)
         if steps % 100 == 0 or (os.environ.get("DEMO_DEBUG") and steps % int(os.environ.get("DEBUG_EVERY", "20")) == 0):
-            msg = f"step {steps} score {info.get('score')}"
+            st_ = task._STATE
+            msg = (f"step {steps} score {info.get('score')} kerf {st_.get('kerf', 0):.4f} cut {st_.get('cut')} f_mean {st_['f_sum'] / max(1, st_['f_n']):.2f}"
+                   f" f_max {st_['f_max']:.2f} v_mean_mm_s {1000 * st_['v_sum'] / max(1, st_['f_n']):.2f} n {st_['f_n']}")
             if os.environ.get("DEMO_DEBUG"):
                 inf = task._STATE.get('info', {})
                 msg += f" | held {task._STATE['held']} gate {task._STATE['gate']} " + ', '.join(f'{k} {round(v,3) if isinstance(v,float) else v}' for k, v in inf.items() if k in ('rear','front','zone','hand_piece','tilt','speed','lifted','why','kerf','wander'))
@@ -324,7 +330,10 @@ def run(task_path: str, out_dir: str, max_steps: int = 1500, record: bool = True
             break
     score = 1.0 if success else float(info.get("score", 0.0) or 0.0)
     result = {"task_score": score, "success": success, "steps": steps, "variant": os.environ.get("DEMO_VARIANT", ""),
-              "worst_ik_mm": {"left": round(ctx.left.worst_mm, 2), "right": round(ctx.right.worst_mm, 2)}}
+              "worst_ik_mm": {"left": round(ctx.left.worst_mm, 2), "right": round(ctx.right.worst_mm, 2)},
+              "kerf_m": round(float(task._STATE.get("kerf", 0.0)), 4), "cut_step": task._STATE.get("cut_step"),
+              "resistance_mean_N": round(task._STATE["f_sum"] / max(1, task._STATE["f_n"]), 3), "resistance_max_N": round(task._STATE["f_max"], 3),
+              "feed_mean_mm_s": round(1000 * task._STATE["v_sum"] / max(1, task._STATE["f_n"]), 3), "engaged_steps": task._STATE["f_n"]}
     if record:
         import imageio
 

@@ -1,6 +1,6 @@
-"""On the station table stands a benchtop table saw: a 810 x 480 mm cast-iron table (30 mm thick) with a fixed 10 in saw blade in the middle (a 2.4 mm
+"""On the station table stands a benchtop table saw: a 810 x 480 mm cast-iron table (30 mm thick) with a fixed 250 mm (10 in class) 24-tooth carbide saw blade in the middle (a 2.4 mm
 steel plate along the feed direction +x, 25 mm above the table, 150 mm chord at the table, red teeth), a riving knife behind the blade and a see-through
-blade guard (a hood with side walls and a slatted roof over the blade, hung from an over-arm on a column). An intact pine plank (19 x 140 x 440 mm, one rigid
+blade guard (a hood with side walls and a slatted roof over the blade, hung from an over-arm on a column). An intact spruce plank (19 x 140 x 440 mm, one rigid
 body) lies across the feed direction (long side along y), centred on the blade, with its front edge just before the blade, its rear edge against the fence of a crosscut sled (a gauge whose two runners slide in two miter slots in the table). Two push sticks lie on the
 table behind the sled, one each side of the blade. A red line is painted 100 mm before the blade. The saw is "running" for the whole trial.
 
@@ -26,14 +26,14 @@ SCENE = "station"
 SCORE_OVER = "end"
 TOP = TABLE_TOP[SCENE]
 
-INSTRUCTION = "Cut the pine plank in two across its breadth, then leave both halves lying flat on the table."
+INSTRUCTION = "Cut the spruce plank in two across its breadth, then leave both halves lying flat on the table."
 
 # -- colours ------------------------------------------------------------------------------------------------------------
 GREY = (0.62, 0.63, 0.66)
 SILVER = (0.80, 0.82, 0.85)
 DARK = (0.18, 0.18, 0.20)
 RED = (0.90, 0.10, 0.08)
-PINE = (0.93, 0.80, 0.45)
+PINE = (0.93, 0.80, 0.45)          # light softwood colour (plank and push sticks)
 ORANGE = (0.97, 0.50, 0.08)
 GUARD_C = (0.55, 0.75, 0.95)
 
@@ -45,13 +45,14 @@ SAW_Y0, SAW_Y1 = -0.24, 0.24       # table y extent (480 mm)
 PLANK_T, PLANK_B, PLANK_L = 0.019, 0.140, 0.440     # thickness, breadth (along x, the cut is made through it), length (along y)
 KERF = 0.0032                      # 1/8 in saw kerf
 HALF_L = (PLANK_L - KERF) / 2      # 218.4 mm each
-BLADE_T, BLADE_H, BLADE_X0, BLADE_L = 0.0024, 0.025, 0.500, 0.150   # 10 in blade, 25 mm above the table: 150 mm chord at the table
+BLADE_T, BLADE_H, BLADE_X0, BLADE_L = 0.0024, 0.025, 0.500, 0.150   # 250 mm blade (the source's), 25 mm above the table: 150 mm chord at the table
 BLADE_X1 = BLADE_X0 + BLADE_L
 BLADE_UP_L = 0.077                 # chord at the top of a 19 mm plank (disc profile in two steps)
 TOP_LEAD = (BLADE_L - BLADE_UP_L) / 2     # the blade's leading edge at the plank top is this far behind its leading edge at the table
 STOP_X = BLADE_X0 - 0.100          # painted stop line, 100 mm before the blade
 CUT_DONE = BLADE_X0 + TOP_LEAD + 0.012     # both halves' rear edges at least this far (12 mm past the blade's leading edge at the plank top)
-RHO = 500.0                        # pine, kg/m3
+RHO = 500.0                        # pine (push sticks), kg/m3
+RHO_SPRUCE = 430.0                 # spruce plank at 12 % moisture, kg/m3 (the source's measured mean)
 RHO_AL = 2700.0
 RHO_CI = 7200.0                    # cast iron table
 KNIFE_T, KNIFE_H = 0.0028, 0.022   # riving knife: 2.8 mm (thicker than the 2.4 mm blade, thinner than the 3.2 mm kerf), 3 mm below the blade top
@@ -100,7 +101,7 @@ BLADE_BOXES = ("1", "2", "3")      # no collision with the plank (see _blade_no_
 SAW_MASS = round(RHO_CI * SAW_WID * SAW_LEN * SAW_H + RHO_AL * 0.1 * 0.01 * 0.5 + 7850.0 * BLADE_T * BLADE_L * BLADE_H, 1)
 SAW = part("saw", pos=(SAW_CX, SAW_CY, TOP + SAW_H / 2 + 0.0005), boxes=SAW_BOXES, mass=SAW_MASS, color=GREY, friction=0.25)
 
-# -- the stock: ONE intact pine plank (one rigid body) across the feed direction. The cut is code-driven (see _cut): when the kerf has run the
+# -- the stock: ONE intact spruce plank (one rigid body) across the feed direction. The cut is code-driven (see _cut): when the kerf has run the
 # whole breadth, the plank body is replaced by the two cut halves (3.2 mm of kerf removed). The two half bodies exist from the start but lie
 # hidden on a free corner of the saw table until then (the plank is parked on the station table afterwards).
 PLANK_REAR0 = BLADE_X0 - 0.005 - PLANK_B          # rear edge at the start (front edge 5 mm before the blade)
@@ -114,11 +115,11 @@ PARK = {"half_l": (0.80, 0.12, PARK_Z), "half_r": (0.80, -0.12, PARK_Z), "board"
 
 def _half(name):
     return part(name, pos=PARK[name], boxes=[((0, 0, 0), (PLANK_B, HALF_L, PLANK_T), PINE)],
-                mass=round(RHO * PLANK_B * HALF_L * PLANK_T, 4), color=PINE, friction=PLANK_FRIC)
+                mass=round(RHO_SPRUCE * PLANK_B * HALF_L * PLANK_T, 4), color=PINE, friction=PLANK_FRIC)
 
 
 BOARD = part("board", pos=(PLANK_CX, 0.0, PLANK_CZ), boxes=[((0, 0, 0), (PLANK_B, PLANK_L, PLANK_T), PINE)],
-             mass=round(RHO * PLANK_B * PLANK_L * PLANK_T, 4), color=PINE, friction=PLANK_FRIC)
+             mass=round(RHO_SPRUCE * PLANK_B * PLANK_L * PLANK_T, 4), color=PINE, friction=PLANK_FRIC)
 HALF_LEFT = _half("half_l")
 HALF_RIGHT = _half("half_r")
 
@@ -225,7 +226,7 @@ def _on_reset(fn):
 
 def _fresh() -> dict:
     return dict(step=0, scored=None, last=(0.0, False), held=0, gate=False, why="", lifted=False, info={}, wmax=0.0,
-                cut=False, kerf=0.0, acc_step=-1, prev_front=None)
+                cut=False, kerf=0.0, acc_step=-1, prev_front=None, f_sum=0.0, v_sum=0.0, f_n=0, f_max=0.0, xs=[])
 
 
 def _set_collision(name_part: str, on: bool, boxes=None) -> int:
@@ -471,7 +472,8 @@ def _update(objects) -> tuple[float, bool]:
     tr = os.environ.get("TASK_TRACE")
     if tr:
         rec = {k: (round(float(v), 5) if not isinstance(v, (bool, str)) else v) for k, v in info.items()}
-        rec.update(step=_STATE["step"], level=level, held=_STATE["held"])
+        rec.update(step=_STATE["step"], level=level, held=_STATE["held"], f_max=round(_STATE["f_max"], 3), f_n=_STATE["f_n"],
+                   f_mean=round(_STATE["f_sum"] / max(1, _STATE["f_n"]), 3), v_mean=round(_STATE["v_sum"] / max(1, _STATE["f_n"]), 5))
         for n in ("board", "half_l", "half_r", "sled", "stick_l", "stick_r"):
             if n in objects:
                 rec[n] = [round(float(x), 4) for x in objects[n].pos]
@@ -484,19 +486,50 @@ def _update(objects) -> tuple[float, bool]:
 
 
 # -- the disclosed cutting resistance (code-driven; the blade is not a physical collider) -----------------------------------------
-# ONE stated feed resistance, acting at the cut line. Source: Javorek, Kminiak, Vargovska, Csanady, Nemeth (2022), "Feed Cutting Force Component in
-# Up and Down Sawing of Pine", Drvna industrija 73(3):279-288, DOI 10.5552/drvind.2022.0018: pine boards 23 mm thick sawn with 16- and 24-tooth
-# discs at 4000-6000 rpm and 15-25 m/min feed; measured feed force 10.1-39.7 N (Tables 4 and 5). The smallest value measured, 10.1 N (16 teeth, 5000 rpm,
-# 15 m/min, 23 mm deep, down-cutting), is the reference, because the arms are slow and the blade sharp. The cutting force is taken proportional to the
-# cut depth (chip area scales with it; the paper's own depth is 23 mm, no extrapolation from an assumed depth): FEED_N = 10.1 N x 19 mm / 23 mm = 8.3 N for
-# both arms together (4.2 N each; the simulated arms stall near 7 N each). That is the LOW end of the measured range (the paper is a longitudinal cut of a
-# machine-fed board; a hand-fed crosscut at about 2 m/min is slower, and forces rise with feed speed in the paper, but a dull blade or wet wood needs more). While the plank is engaged with the blade the reaction acts on the plank at the blade's
-# leading edge on the blade plane: a force -x of FEED_N applied at that point, only while the plank moves forward (it ramps up to FEED_N between 0 and 1 mm/s: a cut resists the feed, it never pushes the plank back). Its torque about the plank's centre follows from where that point
-# is (no separate side/yaw/lift constants): with both sticks pushing evenly it cancels, with one stick it turns the plank about the blade.
-REF_FORCE_N, REF_DEPTH, STOCK_DEPTH = 10.1, 0.023, PLANK_T
-FEED_N = REF_FORCE_N * STOCK_DEPTH / REF_DEPTH
-V_SAT = 0.001          # m/s: the resistance reaches its full value at this forward speed (smoothing only: it vanishes when the plank is not fed, so it never pushes it back)
-BOARD_M = RHO * PLANK_B * PLANK_L * PLANK_T
+# ONE stated feed resistance, acting at the cut line, taken from a CROSSCUT measurement with a circular saw at a constant (hand-like) feed force:
+# Kminiak and Kubs (2016), "Cutting Power during Cross-Cutting of Selected Wood Species with a Circular Saw", BioResources 11(4):10528-10539,
+# DOI 10.15376/biores.11.4.10528-10539. Conditions: spruce (430 kg/m3), beech and oak, 12 % moisture, specimens 50 mm thick, cross-cut on a sliding
+# miter saw (Bosch GCM 10S) with 250 mm carbide blades, 3.2 mm kerf, 24/40/60 teeth, cutting speed 62 m/s; the blade was fed by a rope and weights at a
+# CONSTANT feed force of 15, 20 or 25 N ("the lowest and highest feed force values at which the sample can be completely cut without the blade getting
+# jammed"); Fig. 10 gives the cutting time per cut. Read from Fig. 10 for the 24-tooth blade (no chip limiter): 15 N -> 39 s, 20 N -> 22.5 s, 25 N ->
+# 10.5 s. Each cut runs the specimen's 150 mm length across the grain, so the feed speed at 15 N was 150 / 39 = 3.8 mm/s (6.7 and 14.3 mm/s at 20 / 25 N).
+# Fig. 10 pools all three species; spruce is the least energy-intensive (Table 3), so at a given speed spruce needs no more than these forces.
+# Assumption (the only one): at the same feed speed the feed force is proportional to the depth of cut (stock thickness): x 19 / 50.
+# So FEED_N(v) = 15 / 20 / 25 N x 19/50 = 5.7 / 7.6 / 9.5 N at 3.8 / 6.7 / 14.3 mm/s, linear between, extrapolated on the last slope above 14.3 mm/s,
+# and NOT reduced below 3.8 mm/s (no data there: the lowest measured force is kept). Below 1 mm/s it ramps to 0 (a cut resists the feed, it never pushes
+# the plank back). The task's blade, kerf and stock follow the source: 250 mm, 24 teeth, 3.2 mm kerf, spruce; the demo feeds at 4 mm/s (the 15 N condition).
+# While the plank is engaged with the blade the reaction acts on the plank at the blade's leading edge on the blade plane; its torque about the plank's
+# centre follows from where that point is (no separate side/yaw/lift constants): with both sticks pushing evenly it cancels, with one it turns the plank.
+REF_DEPTH, STOCK_DEPTH, REF_CUT_LEN = 0.050, PLANK_T, 0.150
+REF_POINTS = ((15.0, 39.0), (20.0, 22.5), (25.0, 10.5))            # (constant feed force N, cutting time s), Fig. 10, z = 24
+FEED_CURVE = tuple((REF_CUT_LEN / t, f * STOCK_DEPTH / REF_DEPTH) for f, t in REF_POINTS)   # (feed speed m/s, resistance N) for the 19 mm plank
+FEED_N = FEED_CURVE[0][1]   # 5.7 N: the resistance at (and below) the source's slowest measured feed, 3.8 mm/s
+V_SAT = 0.001          # m/s: below this forward speed the resistance ramps to 0 (smoothing only: it vanishes when the plank is not fed)
+V_WIN = 10             # control steps (0.5 s at 20 Hz): the feed speed is the plank's mean forward speed over this window (the source's speeds are means
+                       # over a whole cut; the contact solver's step-to-step velocity jitter is not a feed speed)
+DT = 0.05              # s per control step (20 Hz)
+
+
+def feed_resistance(v: float) -> float:
+    """Feed resistance (N, >= 0) on the 19 mm spruce plank at forward feed speed v (m/s), from the source curve scaled by depth (see above)."""
+    if v <= 0.0:
+        return 0.0
+    c = FEED_CURVE
+    if v <= c[0][0]:
+        f = c[0][1]
+    else:
+        f = None
+        for (v0, f0), (v1, f1) in zip(c[:-1], c[1:]):
+            if v <= v1:
+                f = f0 + (f1 - f0) * (v - v0) / (v1 - v0)
+                break
+        if f is None:
+            (v0, f0), (v1, f1) = c[-2], c[-1]
+            f = f1 + (f1 - f0) * (v - v1) / (v1 - v0)
+    return f * min(1.0, v / V_SAT)
+
+
+BOARD_M = RHO_SPRUCE * PLANK_B * PLANK_L * PLANK_T
 
 
 @_on_step
@@ -552,16 +585,26 @@ def _cut(environment, st) -> None:
 
 
 def _loads(environment, st, scale: float) -> None:
-    """Set (every control step) the persistent external wrench on the intact plank while it is engaged with the blade: the feed resistance FEED_N
+    """Set (every control step) the persistent external wrench on the intact plank while it is engaged with the blade: the feed resistance feed_resistance(v)
     (-x) acting at the blade's leading edge on the blade plane; the torque about the plank's centre is (point - centre) x force."""
     b = st["board"]
     lo, hi = x_extent(b)
     engaged = hi > BLADE_X0 and lo < BLADE_X0 + TOP_LEAD and float(b.low[2]) - SAW_TOP < BLADE_H and abs(float(b.pos[1])) < 0.2
     _STATE["loads_on"] = engaged
+    if not engaged:
+        _STATE["xs"] = []
     f = np.zeros(3)
     t = np.zeros(3)
     if engaged:
-        f[0] = -scale * FEED_N * min(1.0, max(float(b.lin_vel[0]), 0.0) / V_SAT)       # a cutting force only opposes forward feed (never pushes the plank back)
+        xs = _STATE["xs"]
+        xs.append(float(b.pos[0]))
+        del xs[:-(V_WIN + 1)]
+        v = (xs[-1] - xs[0]) / (DT * (len(xs) - 1)) if len(xs) > 1 else 0.0       # mean feed speed over the last 0.5 s
+        f[0] = -scale * feed_resistance(v)       # a cutting force only opposes forward feed: zero once the plank's mean speed is not forward
+        _STATE['f_sum'] += float(-f[0])                                 # bookkeeping for the trace: mean / max resistance and mean feed speed while engaged
+        _STATE['v_sum'] += v
+        _STATE['f_n'] += 1
+        _STATE['f_max'] = max(_STATE['f_max'], float(-f[0]))
         r = np.array([BLADE_X0, 0.0, float(b.pos[2])]) - np.asarray(b.pos)
         t = np.cross(r, f)
         f[2] += float(os.environ.get("SAW_TEST_LIFT", "0"))      # ablation hook only (default 0): an upward force on the plank, stands for a cheat that lifts it
